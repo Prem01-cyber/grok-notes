@@ -9,7 +9,7 @@ class PromptInput(BaseModel):
     text: str
 
 @router.post("/generate/stream")
-async def generate_stream(input: PromptInput):
+async def generate_stream(input: PromptInput) -> StreamingResponse:
     generator = stream_grok_response(input.text)
     return StreamingResponse(generator, media_type="text/plain")
 

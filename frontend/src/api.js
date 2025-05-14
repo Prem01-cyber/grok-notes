@@ -1,7 +1,6 @@
-// src/api.js
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000"; // your FastAPI backend
+const API_BASE = "http://localhost:8000";
 
 export async function summarizeNote(text) {
   try {
@@ -14,9 +13,7 @@ export async function summarizeNote(text) {
 }
 
 export async function* streamGrokText(text) {
-  console.log("📡 Sending POST request to backend with text:", text);
-
-  const res = await fetch("http://localhost:8000/generate/stream", {
+  const res = await fetch(`${API_BASE}/generate/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
@@ -24,7 +21,7 @@ export async function* streamGrokText(text) {
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error("🚨 Grok API error:", res.status, errText);
+    console.error("Grok API error:", res.status, errText);
     throw new Error(`Grok API error: ${res.status}`);
   }
 
@@ -34,8 +31,26 @@ export async function* streamGrokText(text) {
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
-    const chunk = decoder.decode(value);
-    yield chunk;
+    yield decoder.decode(value);
+  }
+}
+
+export async function getAllNotes() {
+  try {
+    const res = await axios.get(`${API_BASE}/notes`);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to load notes", err);
+    return [];
+  }
+}
+
+export async function saveNote(note) {
+  try {
+    const res = await axios.post(`${API_BASE}/notes/save`, note);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to save note", err);
   }
 }
 

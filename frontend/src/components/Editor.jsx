@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
-import { streamGrokText } from "../api";
+import { streamGrokText, saveNote } from "../api";
 import { marked } from "marked";
 
-// Decode escaped characters (like \n, \t) from LLM
 function decodeChunk(chunk) {
   return chunk
     .replace(/\\n/g, "\n")
@@ -18,30 +17,58 @@ function decodeChunk(chunk) {
     .replace(/\\\\/g, "\\");
 }
 
-export default function Editor() {
+export default function Editor({ currentNote, onSave }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptInput, setPromptInput] = useState("");
+  const [title, setTitle] = useState(currentNote.title);
+  const autosaveTimer = useRef(null);
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        bulletList: { keepMarks: true, keepAttributes: false },
-      }),
+      StarterKit.configure({ bulletList: { keepMarks: true } }),
       Typography,
       Highlight,
-      Placeholder.configure({
-        placeholder: "Start typing your notes here...",
-      }),
+      Placeholder.configure({ placeholder: "Start typing your notes here..." }),
     ],
-    editorProps: {
-      attributes: {
-        class:
-          "tiptap prose max-w-none focus:outline-none text-base px-4 py-3",
-        spellCheck: "false",
-      },
-    },
-    content: "",
+    content: currentNote?.content_json || "",
   });
+
+  useEffect(() => {
+    if (editor && currentNote?.content_json) {
+      try {
+        const content = JSON.parse(currentNote.content_json);
+        editor.commands.setContent(content);
+      } catch (e) {
+        console.warn("Invalid content_json fallback:", e);
+        editor.commands.setContent({
+          type: "doc",
+          content: [],
+        });
+      }
+      setTitle(currentNote.title);
+    }
+  }, [editor, currentNote]);
+
+  useEffect(() => {
+    if (!editor || !currentNote) return;
+
+    const handler = () => {
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+
+      autosaveTimer.current = setTimeout(async () => {
+        const updated = {
+          ...currentNote,
+          title: title,
+          content_json: JSON.stringify(editor.getJSON()),
+        };
+        await saveNote(updated);
+        if (onSave) onSave(updated);
+      }, 1500);
+    };
+
+    editor.on("update", handler);
+    return () => editor.off("update", handler);
+  }, [editor, currentNote, title]);
 
   const handleGrokSubmit = async (e) => {
     e.preventDefault();
@@ -89,10 +116,15 @@ export default function Editor() {
   return (
     <div className="relative">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4">
+        <input
+          type="text"
+          className="text-xl font-bold mb-4 w-full border-b focus:outline-none"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
         <EditorContent editor={editor} />
       </div>
 
-      {/* Grok Prompt Box */}
       <form
         onSubmit={handleGrokSubmit}
         className="fixed bottom-6 left-6 w-[320px] bg-white border border-gray-300 rounded-xl shadow-xl p-3 flex gap-2 z-50 backdrop-blur-sm"
