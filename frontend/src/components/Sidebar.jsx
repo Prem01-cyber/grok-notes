@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { getAllNotes, saveNote } from "../api";
 
-export default function Sidebar({ onSelect, selectedId }) {
-  const [notes, setNotes] = useState([]);
-
+export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
   async function fetchNotes() {
     const data = await getAllNotes();
     setNotes(data);
@@ -18,11 +16,14 @@ export default function Sidebar({ onSelect, selectedId }) {
       type: "doc",
       content: [],
     };
+
     const note = await saveNote({
-      title: "Untitled",
+      title: `Note ${notes.length + 1}`,
       content_json: JSON.stringify(defaultContent),
     });
-    setNotes((prev) => [...prev, note]);
+
+    const updatedNotes = [...notes, note];
+    setNotes(updatedNotes);
     onSelect(note);
   };
 
@@ -43,7 +44,7 @@ export default function Sidebar({ onSelect, selectedId }) {
             selectedId === note.id ? "bg-gray-200" : ""
           }`}
         >
-          {note.title || "Untitled Note"}
+          {note.title || `Note ${note.id}`}
         </div>
       ))}
     </div>
