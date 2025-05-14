@@ -19,3 +19,18 @@ def get_summary_from_grok(text: str) -> str:
     )
     return response.choices[0].message.content.strip()
 
+def stream_grok_response(text: str):
+    response = client.chat.completions.create(
+        model="grok-3-latest",
+        messages=[
+            {"role": "system", "content": "You are a helpful summarizer."},
+            {"role": "user", "content": f"Summarize this:\n{text}"}
+        ],
+        stream=True
+    )
+
+    for chunk in response:
+        if chunk.choices and chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
+
+

@@ -12,3 +12,23 @@ export async function summarizeNote(text) {
     return "Failed to summarize.";
   }
 }
+
+export async function* streamGrokText(text) {
+  const res = await fetch("http://localhost:8000/generate/stream", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ text }),
+  });
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    yield decoder.decode(value);
+  }
+}
+
