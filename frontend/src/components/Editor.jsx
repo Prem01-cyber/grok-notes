@@ -4,8 +4,19 @@ import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
-import { marked } from "marked";
 import { streamGrokText } from "../api";
+import { marked } from "marked";
+
+// Decode escaped characters (e.g., \n, \t)
+function decodeChunk(chunk) {
+  return chunk
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\r/g, '\r')
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+    .replace(/\\\\/g, '\\');
+}
 
 export default function Editor() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -13,16 +24,18 @@ export default function Editor() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Highlight,
+      StarterKit.configure({
+        bulletList: { keepMarks: true, keepAttributes: false },
+      }),
       Typography,
+      Highlight,
       Placeholder.configure({
         placeholder: "Start typing your notes here...",
       }),
     ],
     editorProps: {
       attributes: {
-        class: "tiptap focus:outline-none text-base min-h-[300px] px-4 py-3",
+        class: "tiptap prose max-w-none focus:outline-none text-base px-4 py-3",
       },
     },
     content: "",
@@ -32,34 +45,41 @@ export default function Editor() {
     e.preventDefault();
     if (!promptInput.trim() || !editor) return;
 
-    console.log("Submitting prompt to Grok:", promptInput);
     setIsGenerating(true);
+    const stream = streamGrokText(promptInput);
+    let fullMarkdown = "";
+
+    const startPos = editor.state.selection.from; // Save starting cursor position
+    let pos = startPos;
 
     try {
-      const stream = streamGrokText(promptInput);
-      let received = false;
-      let fullMarkdown = "";
-
-      for await (const chunk of stream) {
-        if (!received) {
-          console.log("Streaming started...");
-          received = true;
-        }
-
-        console.log("Received chunk:", JSON.stringify(chunk));
+      for await (const rawChunk of stream) {
+        const chunk = decodeChunk(rawChunk);
         fullMarkdown += chunk;
+
+        // Insert chunk inline at current position and advance cursor
+        editor.commands.command(({ tr, dispatch }) => {
+          tr.insertText(chunk, pos);
+          pos += chunk.length;
+          if (dispatch) dispatch(tr);
+          return true;
+        });
+
+        await new Promise((r) => setTimeout(r, 10));
       }
 
-      if (!received) {
-        console.warn("No chunks received from Grok.");
-      } else {
-        console.log("Streaming completed.");
-        fullMarkdown = fullMarkdown.replace(/\\n/g, "\n");
+      // Delete raw streamed text from start to final cursor position
+      editor.commands.command(({ tr, dispatch }) => {
+        tr.delete(startPos, pos);
+        if (dispatch) dispatch(tr);
+        return true;
+      });
 
-        const html = marked(fullMarkdown);
-        editor.commands.focus();
-        editor.commands.insertContent(html);
-      }
+      // Insert final Markdown-rendered HTML
+      const html = marked(fullMarkdown);
+      editor.commands.focus();
+      editor.commands.insertContent(html);
+
     } catch (err) {
       console.error("Error during streaming:", err);
     }
