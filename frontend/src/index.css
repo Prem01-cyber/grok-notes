@@ -64,11 +64,22 @@ body {
 
 /* --- Enhanced List Support --- */
 
+/* Top-level UL */
 .tiptap ul {
   list-style-type: disc;
   list-style-position: outside;
   padding-left: 1.5rem;
   margin: 1rem 0;
+}
+
+/* Level 2 */
+.tiptap ul ul {
+  list-style-type: circle;
+}
+
+/* Level 3 */
+.tiptap ul ul ul {
+  list-style-type: square;
 }
 
 .tiptap ol {
@@ -84,7 +95,7 @@ body {
   padding-left: 0.5rem;
 }
 
-/* ✅ Make sure bullet marker is visible */
+/* Make sure bullet marker is visible */
 .tiptap li::marker {
   color: #1f2937;        /* Dark bullet */
   font-size: 1rem;       /* Ensure it's not zero-size */
@@ -92,7 +103,7 @@ body {
   display: inline;       /* Ensure visibility */
 }
 
-/* ✅ Optional: handle p inside li */
+/* Optional: handle p inside li */
 .tiptap li > p {
   margin: 0;
   padding: 0;
