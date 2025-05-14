@@ -7,15 +7,15 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { streamGrokText } from "../api";
 import { marked } from "marked";
 
-// Decode escaped characters (e.g., \n, \t)
+// Decode escaped characters (like \n, \t) from LLM
 function decodeChunk(chunk) {
   return chunk
-    .replace(/\\n/g, '\n')
-    .replace(/\\t/g, '\t')
-    .replace(/\\r/g, '\r')
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\\r/g, "\r")
     .replace(/\\"/g, '"')
     .replace(/\\'/g, "'")
-    .replace(/\\\\/g, '\\');
+    .replace(/\\\\/g, "\\");
 }
 
 export default function Editor() {
@@ -35,7 +35,9 @@ export default function Editor() {
     ],
     editorProps: {
       attributes: {
-        class: "tiptap prose max-w-none focus:outline-none text-base px-4 py-3",
+        class:
+          "tiptap prose max-w-none focus:outline-none text-base px-4 py-3",
+        spellCheck: "false",
       },
     },
     content: "",
@@ -49,7 +51,7 @@ export default function Editor() {
     const stream = streamGrokText(promptInput);
     let fullMarkdown = "";
 
-    const startPos = editor.state.selection.from; // Save starting cursor position
+    const startPos = editor.state.selection.from;
     let pos = startPos;
 
     try {
@@ -57,7 +59,6 @@ export default function Editor() {
         const chunk = decodeChunk(rawChunk);
         fullMarkdown += chunk;
 
-        // Insert chunk inline at current position and advance cursor
         editor.commands.command(({ tr, dispatch }) => {
           tr.insertText(chunk, pos);
           pos += chunk.length;
@@ -68,18 +69,15 @@ export default function Editor() {
         await new Promise((r) => setTimeout(r, 10));
       }
 
-      // Delete raw streamed text from start to final cursor position
       editor.commands.command(({ tr, dispatch }) => {
         tr.delete(startPos, pos);
         if (dispatch) dispatch(tr);
         return true;
       });
 
-      // Insert final Markdown-rendered HTML
       const html = marked(fullMarkdown);
       editor.commands.focus();
       editor.commands.insertContent(html);
-
     } catch (err) {
       console.error("Error during streaming:", err);
     }

@@ -6,13 +6,22 @@ body {
   font-family: 'Inter', sans-serif;
   background: #f9fafb;
   color: #1f2937;
+  line-height: 1.6;
 }
 
+/* TipTap container */
 .tiptap {
   min-height: 300px;
-  white-space: pre-wrap;
+  outline: none;
+  white-space: normal;
+  word-wrap: break-word;
+  padding: 1.25rem;
+  font-size: 1rem;
+  tab-size: 4;
+  line-height: 1.7;
 }
 
+/* Placeholder */
 .tiptap p.is-empty::before {
   content: attr(data-placeholder);
   float: left;
@@ -21,43 +30,81 @@ body {
   height: 0;
 }
 
+/* Headings */
 .tiptap h1 {
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  margin: 1.5rem 0 1rem;
+  margin: 2rem 0 1rem;
 }
 
 .tiptap h2 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  margin: 1.25rem 0 0.75rem;
+  margin: 1.5rem 0 1rem;
 }
 
 .tiptap h3 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 1.2rem 0 0.8rem;
+}
+
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  font-size: 1.05rem;
   font-weight: 500;
   margin: 1rem 0 0.5rem;
 }
 
-.tiptap ul,
-.tiptap ol {
+/* Paragraph */
+.tiptap p {
+  margin: 0.75rem 0;
+}
+
+/* --- Enhanced List Support --- */
+
+.tiptap ul {
+  list-style-type: disc;
+  list-style-position: outside;
   padding-left: 1.5rem;
   margin: 1rem 0;
 }
 
-.tiptap blockquote {
-  border-left: 4px solid #e5e7eb;
-  padding-left: 1rem;
-  color: #6b7280;
-  font-style: italic;
+.tiptap ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  padding-left: 1.5rem;
   margin: 1rem 0;
 }
 
+.tiptap li {
+  position: relative;
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+}
+
+/* ✅ Make sure bullet marker is visible */
+.tiptap li::marker {
+  color: #1f2937;        /* Dark bullet */
+  font-size: 1rem;       /* Ensure it's not zero-size */
+  font-weight: 500;
+  display: inline;       /* Ensure visibility */
+}
+
+/* ✅ Optional: handle p inside li */
+.tiptap li > p {
+  margin: 0;
+  padding: 0;
+  display: inline;       /* Prevent breaking bullets to next line */
+}
+
+/* --- Code blocks and inline code --- */
 .tiptap code {
   background-color: #f3f4f6;
   padding: 0.2em 0.4em;
   border-radius: 4px;
-  font-family: monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.9rem;
 }
 
@@ -68,4 +115,75 @@ body {
   border-radius: 0.5rem;
   font-size: 0.9rem;
   overflow-x: auto;
+  white-space: pre-wrap;
+  font-family: 'JetBrains Mono', monospace;
+  margin: 1.5rem 0;
 }
+
+/* --- Blockquotes --- */
+.tiptap blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1.25rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* --- Horizontal Rule --- */
+.tiptap hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+/* --- Images and Media --- */
+.tiptap img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* --- Checklist (optional future extension) --- */
+.tiptap li[data-type="taskItem"] {
+  list-style: none;
+  align-items: center;
+}
+
+.tiptap li[data-type="taskItem"] > label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tiptap li[data-type="taskItem"] > label input[type="checkbox"] {
+  margin: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* --- Links --- */
+.tiptap a {
+  color: #2563eb;
+  text-decoration: underline;
+  transition: all 0.2s ease;
+}
+.tiptap a:hover {
+  color: #1d4ed8;
+}
+
+/* --- Strong / Emphasis --- */
+.tiptap strong {
+  font-weight: 600;
+}
+.tiptap em {
+  font-style: italic;
+}
+
+/* --- Custom Grok responses block style (optional) --- */
+/* .grok-block {
+  background: #eef2ff;
+  padding: 1rem;
+  border-left: 4px solid #6366f1;
+  margin: 1.25rem 0;
+  border-radius: 0.5rem;
+} */
