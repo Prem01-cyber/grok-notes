@@ -14,13 +14,19 @@ export async function summarizeNote(text) {
 }
 
 export async function* streamGrokText(text) {
+  console.log("📡 Sending POST request to backend with text:", text);
+
   const res = await fetch("http://localhost:8000/generate/stream", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("🚨 Grok API error:", res.status, errText);
+    throw new Error(`Grok API error: ${res.status}`);
+  }
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder("utf-8");
@@ -28,7 +34,8 @@ export async function* streamGrokText(text) {
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
-    yield decoder.decode(value);
+    const chunk = decoder.decode(value);
+    yield chunk;
   }
 }
 
