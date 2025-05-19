@@ -3,3 +3,5 @@ backend/.env
 backend/routes/__pycache__/*
 README.md
 backend/notes.db
+node_modules/*
+

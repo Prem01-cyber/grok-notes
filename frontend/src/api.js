@@ -36,27 +36,54 @@ export async function summarizeNote(text) {
 //   }
 // }
 
-export async function* streamGrokText(payload) {
-  const res = await fetch(`${API_BASE}/generate/stream`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+export async function streamGrokText(payload) {
+  // console.log('🚀 streamGrokText called with payload:', payload);
+  
+  if (!payload || typeof payload !== 'object') {
+    console.error('❌ Invalid payload:', payload);
+    throw new Error('Invalid payload provided to streamGrokText');
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      // console.log('📡 Making fetch request to:', `${API_BASE}/generate/stream`);
+      
+      const response = await fetch(`${API_BASE}/generate/stream`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "text/event-stream"
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // console.log('📥 Response received:', {
+      //   ok: response.ok,
+      //   status: response.status,
+      //   statusText: response.statusText,
+      //   headers: Object.fromEntries(response.headers.entries()),
+      //   body: response.body ? 'ReadableStream present' : 'No ReadableStream'
+      // });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("🚨 Grok API error:", response.status, errText);
+        reject(new Error(`Grok API error: ${response.status} - ${errText}`));
+        return;
+      }
+
+      if (!response.body) {
+        console.error("🚨 No response body from Grok API");
+        reject(new Error("No response body from Grok API"));
+        return;
+      }
+
+      resolve(response);
+    } catch (error) {
+      console.error("🚨 Error in streamGrokText:", error);
+      reject(new Error(`StreamGrokText failed: ${error.message}`));
+    }
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error("🚨 Grok API error:", res.status, errText);
-    throw new Error(`Grok API error: ${res.status}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    yield decoder.decode(value);
-  }
 }
 
 export async function getAllNotes() {
@@ -77,4 +104,3 @@ export async function saveNote(note) {
     console.error("Failed to save note", err);
   }
 }
-
