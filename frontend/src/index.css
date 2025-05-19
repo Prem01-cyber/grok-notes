@@ -135,6 +135,7 @@ body {
   font-family: 'JetBrains Mono', monospace;
   margin: 1.5rem 0;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  position: relative;
 }
 
 .tiptap pre code {
@@ -143,6 +144,64 @@ body {
   padding: 0;
   font-size: inherit;
   font-weight: normal;
+}
+
+/* Language indicator */
+.tiptap pre::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* Syntax highlighting colors */
+.tiptap .hljs-keyword {
+  color: #f472b6;
+}
+
+.tiptap .hljs-string {
+  color: #a5b4fc;
+}
+
+.tiptap .hljs-number {
+  color: #fbbf24;
+}
+
+.tiptap .hljs-comment {
+  color: #64748b;
+  font-style: italic;
+}
+
+.tiptap .hljs-function {
+  color: #34d399;
+}
+
+.tiptap .hljs-variable {
+  color: #f87171;
+}
+
+.tiptap .hljs-operator {
+  color: #94a3b8;
+}
+
+.tiptap .hljs-punctuation {
+  color: #94a3b8;
+}
+
+.tiptap .hljs-property {
+  color: #60a5fa;
+}
+
+.tiptap .hljs-class {
+  color: #34d399;
+}
+
+.tiptap .hljs-attr {
+  color: #60a5fa;
 }
 
 /* --- Blockquotes --- */

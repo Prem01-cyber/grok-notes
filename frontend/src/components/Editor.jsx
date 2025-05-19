@@ -5,8 +5,12 @@ import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { streamGrokText, saveNote } from "../api";
 import { marked } from "marked";
+import { common, createLowlight } from 'lowlight';
+
+const lowlight = createLowlight(common);
 
 function decodeChunk(chunk) {
   return chunk
@@ -49,11 +53,11 @@ export default function Editor({ currentNote, onSave }) {
         heading: {
           levels: [1, 2, 3, 4, 5, 6]
         },
-        codeBlock: {
-          HTMLAttributes: {
-            class: 'rounded-md bg-gray-800 p-5 font-mono text-sm text-gray-100',
-          },
-        },
+        codeBlock: false, // Disable the default code block
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: 'plaintext',
       }),
       Typography,
       Highlight,
@@ -138,6 +142,11 @@ export default function Editor({ currentNote, onSave }) {
         return true;
       });
 
+      // Convert markdown to HTML and then to TipTap JSON
+      const htmlContent = marked.parse(fullMarkdown);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+
       // Function to convert HTML nodes to TipTap JSON
       const convertNodeToJSON = (node) => {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -159,11 +168,9 @@ export default function Editor({ currentNote, onSave }) {
               content: children
             };
           case 'p':
-            // Ensure paragraph has proper text content
-            const paragraphContent = children.length > 0 ? children : [{ type: 'text', text: node.textContent }];
             return {
               type: 'paragraph',
-              content: paragraphContent
+              content: children
             };
           case 'strong':
           case 'b':
@@ -180,6 +187,14 @@ export default function Editor({ currentNote, onSave }) {
               text: node.textContent
             };
           case 'code':
+            if (node.parentElement?.nodeName.toLowerCase() === 'pre') {
+              const language = node.className?.replace('language-', '') || 'plaintext';
+              return {
+                type: 'codeBlock',
+                attrs: { language },
+                content: [{ type: 'text', text: node.textContent }]
+              };
+            }
             return {
               type: 'text',
               marks: [{ type: 'code' }],
@@ -188,6 +203,7 @@ export default function Editor({ currentNote, onSave }) {
           case 'pre':
             return {
               type: 'codeBlock',
+              attrs: { language: 'plaintext' },
               content: [{ type: 'text', text: node.textContent }]
             };
           case 'ul':
@@ -201,14 +217,12 @@ export default function Editor({ currentNote, onSave }) {
               content: children.filter(child => child.type === 'listItem')
             };
           case 'li':
-            // Ensure list items have proper paragraph content
-            const listItemContent = children.length > 0 ? children : [{
-              type: 'paragraph',
-              content: [{ type: 'text', text: node.textContent }]
-            }];
             return {
               type: 'listItem',
-              content: listItemContent
+              content: [{
+                type: 'paragraph',
+                content: children
+              }]
             };
           default:
             return {
@@ -218,60 +232,8 @@ export default function Editor({ currentNote, onSave }) {
         }
       };
 
-      // Convert markdown to HTML and then to TipTap JSON
-      const htmlContent = marked.parse(fullMarkdown);
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = htmlContent;
-
-      // Process the content and ensure proper structure
-      const processContent = (nodes) => {
-        return nodes.map(node => {
-          // Handle text nodes with marks
-          if (node.type === 'text' && node.marks) {
-            return node;
-          }
-          
-          // Ensure paragraphs have proper content
-          if (node.type === 'paragraph') {
-            const content = node.content || [];
-            // If content is empty or contains invalid nodes, create a text node
-            if (content.length === 0 || !content.every(c => c.type === 'text')) {
-              return {
-                type: 'paragraph',
-                content: [{ type: 'text', text: node.text || '' }]
-              };
-            }
-            return node;
-          }
-          
-          // Ensure lists have proper structure
-          if (node.type === 'bulletList' || node.type === 'orderedList') {
-            return {
-              type: node.type,
-              content: node.content.map(item => ({
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: item.content?.[0]?.content || [{ type: 'text', text: '' }]
-                }]
-              }))
-            };
-          }
-          
-          return node;
-        });
-      };
-
-      const content = processContent(Array.from(tempDiv.childNodes).map(convertNodeToJSON));
-      
-      // Insert each node separately to ensure proper structure
-      content.forEach(node => {
-        if (node.type === 'paragraph' || node.type === 'heading' || 
-            node.type === 'bulletList' || node.type === 'orderedList' || 
-            node.type === 'codeBlock') {
-          editor.commands.insertContent(node);
-        }
-      });
+      const content = Array.from(tempDiv.childNodes).map(convertNodeToJSON);
+      editor.commands.insertContent(content);
     } catch (err) {
       console.error("Error during streaming:", err);
     }
