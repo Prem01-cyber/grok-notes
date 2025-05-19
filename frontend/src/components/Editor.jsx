@@ -44,12 +44,27 @@ export default function Editor({ currentNote, onSave }) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ bulletList: { keepMarks: true } }),
+      StarterKit.configure({
+        bulletList: { keepMarks: true },
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6]
+        },
+        codeBlock: {
+          HTMLAttributes: {
+            class: 'rounded-md bg-gray-800 p-5 font-mono text-sm text-gray-100',
+          },
+        },
+      }),
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Start typing your notes here..." }),
     ],
     content: currentNote?.content_json || "",
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none',
+      },
+    },
   });
 
   useEffect(() => {
@@ -123,9 +138,139 @@ export default function Editor({ currentNote, onSave }) {
         return true;
       });
 
-      editor.commands.insertContent({
-        type: "paragraph",
-        content: [{ type: "text", text: fullMarkdown }],
+      // Function to convert HTML nodes to TipTap JSON
+      const convertNodeToJSON = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return { type: 'text', text: node.textContent };
+        }
+
+        const children = Array.from(node.childNodes).map(convertNodeToJSON);
+        
+        switch (node.nodeName.toLowerCase()) {
+          case 'h1':
+          case 'h2':
+          case 'h3':
+          case 'h4':
+          case 'h5':
+          case 'h6':
+            return {
+              type: 'heading',
+              attrs: { level: parseInt(node.nodeName[1]) },
+              content: children
+            };
+          case 'p':
+            // Ensure paragraph has proper text content
+            const paragraphContent = children.length > 0 ? children : [{ type: 'text', text: node.textContent }];
+            return {
+              type: 'paragraph',
+              content: paragraphContent
+            };
+          case 'strong':
+          case 'b':
+            return {
+              type: 'text',
+              marks: [{ type: 'bold' }],
+              text: node.textContent
+            };
+          case 'em':
+          case 'i':
+            return {
+              type: 'text',
+              marks: [{ type: 'italic' }],
+              text: node.textContent
+            };
+          case 'code':
+            return {
+              type: 'text',
+              marks: [{ type: 'code' }],
+              text: node.textContent
+            };
+          case 'pre':
+            return {
+              type: 'codeBlock',
+              content: [{ type: 'text', text: node.textContent }]
+            };
+          case 'ul':
+            return {
+              type: 'bulletList',
+              content: children.filter(child => child.type === 'listItem')
+            };
+          case 'ol':
+            return {
+              type: 'orderedList',
+              content: children.filter(child => child.type === 'listItem')
+            };
+          case 'li':
+            // Ensure list items have proper paragraph content
+            const listItemContent = children.length > 0 ? children : [{
+              type: 'paragraph',
+              content: [{ type: 'text', text: node.textContent }]
+            }];
+            return {
+              type: 'listItem',
+              content: listItemContent
+            };
+          default:
+            return {
+              type: 'paragraph',
+              content: [{ type: 'text', text: node.textContent }]
+            };
+        }
+      };
+
+      // Convert markdown to HTML and then to TipTap JSON
+      const htmlContent = marked.parse(fullMarkdown);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+
+      // Process the content and ensure proper structure
+      const processContent = (nodes) => {
+        return nodes.map(node => {
+          // Handle text nodes with marks
+          if (node.type === 'text' && node.marks) {
+            return node;
+          }
+          
+          // Ensure paragraphs have proper content
+          if (node.type === 'paragraph') {
+            const content = node.content || [];
+            // If content is empty or contains invalid nodes, create a text node
+            if (content.length === 0 || !content.every(c => c.type === 'text')) {
+              return {
+                type: 'paragraph',
+                content: [{ type: 'text', text: node.text || '' }]
+              };
+            }
+            return node;
+          }
+          
+          // Ensure lists have proper structure
+          if (node.type === 'bulletList' || node.type === 'orderedList') {
+            return {
+              type: node.type,
+              content: node.content.map(item => ({
+                type: 'listItem',
+                content: [{
+                  type: 'paragraph',
+                  content: item.content?.[0]?.content || [{ type: 'text', text: '' }]
+                }]
+              }))
+            };
+          }
+          
+          return node;
+        });
+      };
+
+      const content = processContent(Array.from(tempDiv.childNodes).map(convertNodeToJSON));
+      
+      // Insert each node separately to ensure proper structure
+      content.forEach(node => {
+        if (node.type === 'paragraph' || node.type === 'heading' || 
+            node.type === 'bulletList' || node.type === 'orderedList' || 
+            node.type === 'codeBlock') {
+          editor.commands.insertContent(node);
+        }
       });
     } catch (err) {
       console.error("Error during streaming:", err);
