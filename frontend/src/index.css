@@ -15,10 +15,11 @@ body {
   outline: none;
   white-space: normal;
   word-wrap: break-word;
-  padding: 1.25rem;
+  padding: 1.5rem;
   font-size: 1rem;
   tab-size: 4;
   line-height: 1.7;
+  color: #374151;
 }
 
 /* Placeholder */
@@ -32,52 +33,56 @@ body {
 
 /* Headings */
 .tiptap h1 {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 2rem 0 1rem;
+  color: #111827;
+  letter-spacing: -0.025em;
 }
 
 .tiptap h2 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  margin: 1.5rem 0 1rem;
+  margin: 1.75rem 0 1rem;
+  color: #1f2937;
+  letter-spacing: -0.025em;
 }
 
 .tiptap h3 {
-  font-size: 1.2rem;
-  font-weight: 500;
-  margin: 1.2rem 0 0.8rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+  color: #374151;
 }
 
 .tiptap h4,
 .tiptap h5,
 .tiptap h6 {
-  font-size: 1.05rem;
-  font-weight: 500;
-  margin: 1rem 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.75rem;
+  color: #4b5563;
 }
 
 /* Paragraph */
 .tiptap p {
-  margin: 0.75rem 0;
+  margin: 1rem 0;
+  line-height: 1.75;
 }
 
 /* --- Enhanced List Support --- */
-
-/* Top-level UL */
 .tiptap ul {
   list-style-type: disc;
   list-style-position: outside;
-  padding-left: 1.5rem;
-  margin: 1rem 0;
+  padding-left: 1.75rem;
+  margin: 1.25rem 0;
 }
 
-/* Level 2 */
 .tiptap ul ul {
   list-style-type: circle;
+  margin: 0.5rem 0;
 }
 
-/* Level 3 */
 .tiptap ul ul ul {
   list-style-type: square;
 }
@@ -85,117 +90,148 @@ body {
 .tiptap ol {
   list-style-type: decimal;
   list-style-position: outside;
-  padding-left: 1.5rem;
-  margin: 1rem 0;
+  padding-left: 1.75rem;
+  margin: 1.25rem 0;
 }
 
 .tiptap li {
   position: relative;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   padding-left: 0.5rem;
+  line-height: 1.75;
 }
 
-/* Make sure bullet marker is visible */
 .tiptap li::marker {
-  color: #1f2937;        /* Dark bullet */
-  font-size: 1rem;       /* Ensure it's not zero-size */
+  color: #4b5563;
+  font-size: 1rem;
   font-weight: 500;
-  display: inline;       /* Ensure visibility */
 }
 
-/* Optional: handle p inside li */
 .tiptap li > p {
   margin: 0;
   padding: 0;
-  display: inline;       /* Prevent breaking bullets to next line */
+  display: inline;
 }
 
 /* --- Code blocks and inline code --- */
 .tiptap code {
   background-color: #f3f4f6;
+  color: #dc2626;
   padding: 0.2em 0.4em;
   border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .tiptap pre {
-  background-color: #111827;
-  color: #f9fafb;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
   overflow-x: auto;
   white-space: pre-wrap;
   font-family: 'JetBrains Mono', monospace;
   margin: 1.5rem 0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.tiptap pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+  font-weight: normal;
 }
 
 /* --- Blockquotes --- */
 .tiptap blockquote {
   border-left: 4px solid #e5e7eb;
-  padding-left: 1rem;
-  margin: 1.25rem 0;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
   font-style: italic;
   color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0 0.5rem 0.5rem 0;
 }
 
 /* --- Horizontal Rule --- */
 .tiptap hr {
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 2px solid #e5e7eb;
   margin: 2rem 0;
 }
 
 /* --- Images and Media --- */
 .tiptap img {
   max-width: 100%;
-  border-radius: 0.5rem;
-  margin: 1rem 0;
-}
-
-/* --- Checklist (optional future extension) --- */
-.tiptap li[data-type="taskItem"] {
-  list-style: none;
-  align-items: center;
-}
-
-.tiptap li[data-type="taskItem"] > label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tiptap li[data-type="taskItem"] > label input[type="checkbox"] {
-  margin: 0;
-  width: 1rem;
-  height: 1rem;
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 /* --- Links --- */
 .tiptap a {
   color: #2563eb;
-  text-decoration: underline;
+  text-decoration: none;
+  border-bottom: 1px solid #93c5fd;
   transition: all 0.2s ease;
 }
+
 .tiptap a:hover {
   color: #1d4ed8;
+  border-bottom-color: #2563eb;
 }
 
 /* --- Strong / Emphasis --- */
 .tiptap strong {
   font-weight: 600;
-}
-.tiptap em {
-  font-style: italic;
+  color: #111827;
 }
 
-/* --- Custom Grok responses block style (optional) --- */
-.grok-block {
-  background: #eef2ff;
-  border-left: 4px solid #6366f1;
-  padding: 1rem;
-  margin: 1.25rem 0;
-  border-radius: 0.5rem;
+.tiptap em {
   font-style: italic;
+  color: #4b5563;
+}
+
+/* --- Custom Grok responses block style --- */
+.grok-block {
+  background: #f0f9ff;
+  border-left: 4px solid #0ea5e9;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 0.75rem;
+  font-style: normal;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+/* --- Selection style --- */
+.tiptap ::selection {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* --- Focus styles --- */
+.tiptap:focus {
+  outline: none;
+}
+
+/* --- Custom scrollbar for code blocks --- */
+.tiptap pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tiptap pre::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.tiptap pre::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.tiptap pre::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
