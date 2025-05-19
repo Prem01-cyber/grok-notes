@@ -78,7 +78,14 @@ export default function Editor({ currentNote, onSave }) {
           // Check if we're at the start of a node
           if ($from.parentOffset === 0) {
             const coords = view.coordsAtPos(selection.from);
-            setPromptPosition({ x: coords.left, y: coords.top });
+            const editorElement = editorRef.current;
+            const editorRect = editorElement.getBoundingClientRect();
+            
+            // Calculate position relative to the editor container
+            const x = coords.left - editorRect.left;
+            const y = coords.top - editorRect.top;
+            
+            setPromptPosition({ x, y });
             setShowPrompt(true);
             event.preventDefault();
             return true;
@@ -136,13 +143,20 @@ export default function Editor({ currentNote, onSave }) {
 
   // Update prompt position on scroll
   useEffect(() => {
-    if (!showPrompt || !editor) return;
+    if (!showPrompt || !editor || !editorRef.current) return;
 
     const updatePosition = () => {
       const { state } = editor;
       const { selection } = state;
       const coords = editor.view.coordsAtPos(selection.from);
-      setPromptPosition({ x: coords.left, y: coords.top });
+      const editorElement = editorRef.current;
+      const editorRect = editorElement.getBoundingClientRect();
+      
+      // Calculate position relative to the editor container
+      const x = coords.left - editorRect.left;
+      const y = coords.top - editorRect.top;
+      
+      setPromptPosition({ x, y });
     };
 
     window.addEventListener('scroll', updatePosition, true);
@@ -191,10 +205,16 @@ export default function Editor({ currentNote, onSave }) {
       // Function to convert HTML nodes to TipTap JSON
       const convertNodeToJSON = (node) => {
         if (node.nodeType === Node.TEXT_NODE) {
+          // Skip empty text nodes
+          if (!node.textContent.trim()) {
+            return null;
+          }
           return { type: 'text', text: node.textContent };
         }
 
-        const children = Array.from(node.childNodes).map(convertNodeToJSON);
+        const children = Array.from(node.childNodes)
+          .map(convertNodeToJSON)
+          .filter(child => child !== null); // Filter out null nodes
         
         switch (node.nodeName.toLowerCase()) {
           case 'h1':
@@ -209,36 +229,38 @@ export default function Editor({ currentNote, onSave }) {
               content: children
             };
           case 'p':
-            // Ensure paragraph has proper text content
-            const paragraphContent = children.length > 0 ? children : [{ type: 'text', text: node.textContent }];
+            // Ensure paragraph has proper content
+            if (children.length === 0) {
+              return null; // Skip empty paragraphs
+            }
             return {
               type: 'paragraph',
-              content: paragraphContent
+              content: children
             };
           case 'strong':
           case 'b':
             return {
               type: 'text',
               marks: [{ type: 'bold' }],
-              text: node.textContent
+              text: node.textContent.trim() || ' ' // Ensure non-empty text
             };
           case 'em':
           case 'i':
             return {
               type: 'text',
               marks: [{ type: 'italic' }],
-              text: node.textContent
+              text: node.textContent.trim() || ' ' // Ensure non-empty text
             };
           case 'code':
             return {
               type: 'text',
               marks: [{ type: 'code' }],
-              text: node.textContent
+              text: node.textContent.trim() || ' ' // Ensure non-empty text
             };
           case 'pre':
             return {
               type: 'codeBlock',
-              content: [{ type: 'text', text: node.textContent }]
+              content: [{ type: 'text', text: node.textContent.trim() || ' ' }]
             };
           case 'ul':
             return {
@@ -251,19 +273,22 @@ export default function Editor({ currentNote, onSave }) {
               content: children.filter(child => child.type === 'listItem')
             };
           case 'li':
-            // Ensure list items have proper paragraph content
-            const listItemContent = children.length > 0 ? children : [{
-              type: 'paragraph',
-              content: [{ type: 'text', text: node.textContent }]
-            }];
+            // Ensure list items have proper content
+            if (children.length === 0) {
+              return null; // Skip empty list items
+            }
             return {
               type: 'listItem',
-              content: listItemContent
+              content: children
             };
           default:
+            // Skip empty nodes
+            if (children.length === 0) {
+              return null;
+            }
             return {
               type: 'paragraph',
-              content: [{ type: 'text', text: node.textContent }]
+              content: children
             };
         }
       };
@@ -275,50 +300,64 @@ export default function Editor({ currentNote, onSave }) {
 
       // Process the content and ensure proper structure
       const processContent = (nodes) => {
-        return nodes.map(node => {
-          // Handle text nodes with marks
-          if (node.type === 'text' && node.marks) {
-            return node;
-          }
-          
-          // Ensure paragraphs have proper content
-          if (node.type === 'paragraph') {
-            const content = node.content || [];
-            // If content is empty or contains invalid nodes, create a text node
-            if (content.length === 0 || !content.every(c => c.type === 'text')) {
+        return nodes
+          .map(node => {
+            // Skip null nodes
+            if (!node) return null;
+
+            // Handle text nodes with marks
+            if (node.type === 'text') {
+              // Ensure text is not empty
+              if (!node.text?.trim()) {
+                return null;
+              }
+              return node;
+            }
+            
+            // Ensure paragraphs have proper content
+            if (node.type === 'paragraph') {
+              const content = node.content || [];
+              // If content is empty or contains invalid nodes, skip it
+              if (content.length === 0 || !content.every(c => c.type === 'text')) {
+                return null;
+              }
+              return node;
+            }
+            
+            // Ensure lists have proper structure
+            if (node.type === 'bulletList' || node.type === 'orderedList') {
+              const validItems = node.content
+                .map(item => ({
+                  type: 'listItem',
+                  content: [{
+                    type: 'paragraph',
+                    content: item.content?.[0]?.content?.filter(c => c.type === 'text' && c.text?.trim()) || []
+                  }]
+                }))
+                .filter(item => item.content[0].content.length > 0);
+
+              if (validItems.length === 0) {
+                return null;
+              }
+
               return {
-                type: 'paragraph',
-                content: [{ type: 'text', text: node.text || '' }]
+                type: node.type,
+                content: validItems
               };
             }
+            
             return node;
-          }
-          
-          // Ensure lists have proper structure
-          if (node.type === 'bulletList' || node.type === 'orderedList') {
-            return {
-              type: node.type,
-              content: node.content.map(item => ({
-                type: 'listItem',
-                content: [{
-                  type: 'paragraph',
-                  content: item.content?.[0]?.content || [{ type: 'text', text: '' }]
-                }]
-              }))
-            };
-          }
-          
-          return node;
-        });
+          })
+          .filter(node => node !== null); // Remove null nodes
       };
 
       const content = processContent(Array.from(tempDiv.childNodes).map(convertNodeToJSON));
       
       // Insert each node separately to ensure proper structure
       content.forEach(node => {
-        if (node.type === 'paragraph' || node.type === 'heading' || 
+        if (node && (node.type === 'paragraph' || node.type === 'heading' || 
             node.type === 'bulletList' || node.type === 'orderedList' || 
-            node.type === 'codeBlock') {
+            node.type === 'codeBlock')) {
           editor.commands.insertContent(node);
         }
       });
@@ -340,7 +379,7 @@ export default function Editor({ currentNote, onSave }) {
 
   return (
     <div className="relative min-h-screen">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4 relative">
         <input
           type="text"
           className="text-xl font-bold mb-4 w-full border-b focus:outline-none"
@@ -348,49 +387,49 @@ export default function Editor({ currentNote, onSave }) {
           onChange={(e) => setTitle(e.target.value)}
         />
         <EditorContent editor={editor} ref={editorRef} />
-      </div>
-      
-      {showPrompt && (
-        <div
-          ref={promptRef}
-          style={{
-            position: 'absolute',
-            left: `${promptPosition.x}px`,
-            top: `${promptPosition.y}px`,
-            zIndex: 50,
-          }}
-          className="bg-white/95 border border-gray-200 rounded-xl shadow-lg p-3 flex gap-2 backdrop-blur-sm min-w-[280px]"
-        >
-          <input
-            type="text"
-            className="flex-1 text-sm p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Ask Grok... (Press Enter to submit)"
-            value={promptInput}
-            onChange={(e) => setPromptInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isGenerating}
-            autoFocus
-          />
-          <button
-            type="button"
-            onClick={handleGrokSubmit}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isGenerating}
+        
+        {showPrompt && (
+          <div
+            ref={promptRef}
+            style={{
+              position: 'absolute',
+              left: `${promptPosition.x}px`,
+              top: `${promptPosition.y}px`,
+              zIndex: 50,
+            }}
+            className="bg-white/95 border border-gray-200 rounded-xl shadow-lg p-3 flex gap-2 backdrop-blur-sm min-w-[280px]"
           >
-            {isGenerating ? (
-              <span className="flex items-center gap-1">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Generating...
-              </span>
-            ) : (
-              "Ask"
-            )}
-          </button>
-        </div>
-      )}
+            <input
+              type="text"
+              className="flex-1 text-sm p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Ask Grok... (Press Enter to submit)"
+              value={promptInput}
+              onChange={(e) => setPromptInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isGenerating}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={handleGrokSubmit}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <span className="flex items-center gap-1">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                "Ask"
+              )}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
