@@ -1,3 +1,4 @@
+// src/components/Editor.jsx
 import { useState, useEffect, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -6,15 +7,34 @@ import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import { streamGrokText, saveNote } from "../api";
 import { marked } from "marked";
+import { GrokBlock } from "../extensions/GrokBlock";
 
 function decodeChunk(chunk) {
   return chunk
-    .replace(/\\n/g, "\n")
-    .replace(/\\t/g, "\t")
-    .replace(/\\r/g, "\r")
-    .replace(/\\"/g, '"')
-    .replace(/\\'/g, "'")
-    .replace(/\\\\/g, "\\");
+    .replace(/\n/g, "\n")
+    .replace(/\t/g, "\t")
+    .replace(/\r/g, "\r")
+    .replace(/\"/g, '"')
+    .replace(/\'/g, "'")
+    .replace(/\\/g, "\\");
+}
+
+function extractStructuredContext(json) {
+  if (!json || !json.content) return "";
+
+  return json.content
+    .map((node) => {
+      if (node.type?.startsWith("heading")) {
+        const level = node.attrs?.level || 1;
+        const text = node.content?.map((n) => n.text).join(" ") || "";
+        return `Heading ${level}: ${text}`;
+      } else if (node.type === "paragraph") {
+        const text = node.content?.map((n) => n.text).join(" ") || "";
+        return `- ${text}`;
+      }
+      return "";
+    })
+    .join("\n");
 }
 
 export default function Editor({ currentNote, onSave }) {
@@ -29,6 +49,7 @@ export default function Editor({ currentNote, onSave }) {
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Start typing your notes here..." }),
+      GrokBlock,
     ],
     content: currentNote?.content_json || "",
   });
@@ -39,11 +60,7 @@ export default function Editor({ currentNote, onSave }) {
         const content = JSON.parse(currentNote.content_json);
         editor.commands.setContent(content);
       } catch (e) {
-        console.warn("Invalid content_json fallback:", e);
-        editor.commands.setContent({
-          type: "doc",
-          content: [],
-        });
+        editor.commands.setContent({ type: "doc", content: [] });
       }
       setTitle(currentNote.title);
     }
@@ -75,9 +92,15 @@ export default function Editor({ currentNote, onSave }) {
     if (!promptInput.trim() || !editor) return;
 
     setIsGenerating(true);
-    const stream = streamGrokText(promptInput);
-    let fullMarkdown = "";
 
+    const noteJSON = editor.getJSON();
+    const stream = streamGrokText({
+      text: promptInput,
+      note_title: title,
+      note_context: extractStructuredContext(noteJSON),
+    });
+
+    let fullMarkdown = "";
     const startPos = editor.state.selection.from;
     let pos = startPos;
 
@@ -102,9 +125,15 @@ export default function Editor({ currentNote, onSave }) {
         return true;
       });
 
-      const html = marked(fullMarkdown);
-      editor.commands.focus();
-      editor.commands.insertContent(html);
+      editor.commands.insertContent({
+        type: "grokBlock",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: fullMarkdown }],
+          },
+        ],
+      });
     } catch (err) {
       console.error("Error during streaming:", err);
     }

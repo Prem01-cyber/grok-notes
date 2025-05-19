@@ -12,16 +12,40 @@ export async function summarizeNote(text) {
   }
 }
 
-export async function* streamGrokText(text) {
+// // This function is used before where there is no difference in the grok generated text and normal text
+// export async function* streamGrokText(text) {
+//   const res = await fetch(`${API_BASE}/generate/stream`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ text }),
+//   });
+
+//   if (!res.ok) {
+//     const errText = await res.text();
+//     console.error("Grok API error:", res.status, errText);
+//     throw new Error(`Grok API error: ${res.status}`);
+//   }
+
+//   const reader = res.body.getReader();
+//   const decoder = new TextDecoder("utf-8");
+
+//   while (true) {
+//     const { value, done } = await reader.read();
+//     if (done) break;
+//     yield decoder.decode(value);
+//   }
+// }
+
+export async function* streamGrokText(payload) {
   const res = await fetch(`${API_BASE}/generate/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    console.error("Grok API error:", res.status, errText);
+    console.error("🚨 Grok API error:", res.status, errText);
     throw new Error(`Grok API error: ${res.status}`);
   }
 
