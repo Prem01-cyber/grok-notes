@@ -7,7 +7,6 @@ import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import { streamGrokText, saveNote } from "../api";
 import { marked } from "marked";
-import { GrokBlock } from "../extensions/GrokBlock";
 
 function decodeChunk(chunk) {
   return chunk
@@ -49,7 +48,6 @@ export default function Editor({ currentNote, onSave }) {
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Start typing your notes here..." }),
-      GrokBlock,
     ],
     content: currentNote?.content_json || "",
   });
@@ -126,13 +124,8 @@ export default function Editor({ currentNote, onSave }) {
       });
 
       editor.commands.insertContent({
-        type: "grokBlock",
-        content: [
-          {
-            type: "paragraph",
-            content: [{ type: "text", text: fullMarkdown }],
-          },
-        ],
+        type: "paragraph",
+        content: [{ type: "text", text: fullMarkdown }],
       });
     } catch (err) {
       console.error("Error during streaming:", err);
