@@ -40,7 +40,11 @@ export default function Editor({ currentNote, onSave }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptInput, setPromptInput] = useState("");
   const [title, setTitle] = useState(currentNote.title);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
   const autosaveTimer = useRef(null);
+  const promptRef = useRef(null);
+  const editorRef = useRef(null);
 
   const editor = useEditor({
     extensions: [
@@ -57,15 +61,45 @@ export default function Editor({ currentNote, onSave }) {
       }),
       Typography,
       Highlight,
-      Placeholder.configure({ placeholder: "Start typing your notes here..." }),
+      Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
     ],
     content: currentNote?.content_json || "",
     editorProps: {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none',
       },
+      handleKeyDown: (view, event) => {
+        // Check if space is pressed at the start of a node
+        if (event.key === ' ' && !showPrompt) {
+          const { state } = view;
+          const { selection } = state;
+          const { $from } = selection;
+          
+          // Check if we're at the start of a node
+          if ($from.parentOffset === 0) {
+            const coords = view.coordsAtPos(selection.from);
+            setPromptPosition({ x: coords.left, y: coords.top });
+            setShowPrompt(true);
+            event.preventDefault();
+            return true;
+          }
+        }
+        return false;
+      },
     },
   });
+
+  // Close prompt when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (promptRef.current && !promptRef.current.contains(event.target)) {
+        setShowPrompt(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (editor && currentNote?.content_json) {
@@ -100,11 +134,27 @@ export default function Editor({ currentNote, onSave }) {
     return () => editor.off("update", handler);
   }, [editor, currentNote, title]);
 
+  // Update prompt position on scroll
+  useEffect(() => {
+    if (!showPrompt || !editor) return;
+
+    const updatePosition = () => {
+      const { state } = editor;
+      const { selection } = state;
+      const coords = editor.view.coordsAtPos(selection.from);
+      setPromptPosition({ x: coords.left, y: coords.top });
+    };
+
+    window.addEventListener('scroll', updatePosition, true);
+    return () => window.removeEventListener('scroll', updatePosition, true);
+  }, [showPrompt, editor]);
+
   const handleGrokSubmit = async (e) => {
     e.preventDefault();
     if (!promptInput.trim() || !editor) return;
 
     setIsGenerating(true);
+    // Don't close the prompt here anymore
 
     const noteJSON = editor.getJSON();
     const stream = streamGrokText({
@@ -272,16 +322,24 @@ export default function Editor({ currentNote, onSave }) {
           editor.commands.insertContent(node);
         }
       });
-    } catch (err) {
-      console.error("Error during streaming:", err);
+    } catch (error) {
+      console.error('Error generating text:', error);
+    } finally {
+      setIsGenerating(false);
+      setPromptInput("");
+      setShowPrompt(false); // Close the prompt only after streaming is complete
     }
+  };
 
-    setPromptInput("");
-    setIsGenerating(false);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleGrokSubmit(e);
+    }
   };
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4">
         <input
           type="text"
@@ -289,29 +347,50 @@ export default function Editor({ currentNote, onSave }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} ref={editorRef} />
       </div>
-
-      <form
-        onSubmit={handleGrokSubmit}
-        className="fixed bottom-6 left-6 w-[320px] bg-white border border-gray-300 rounded-xl shadow-xl p-3 flex gap-2 z-50 backdrop-blur-sm"
-      >
-        <input
-          type="text"
-          className="flex-1 text-sm p-2 border rounded focus:outline-none"
-          placeholder="Ask Grok..."
-          value={promptInput}
-          onChange={(e) => setPromptInput(e.target.value)}
-          disabled={isGenerating}
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
-          disabled={isGenerating}
+      
+      {showPrompt && (
+        <div
+          ref={promptRef}
+          style={{
+            position: 'absolute',
+            left: `${promptPosition.x}px`,
+            top: `${promptPosition.y}px`,
+            zIndex: 50,
+          }}
+          className="bg-white/95 border border-gray-200 rounded-xl shadow-lg p-3 flex gap-2 backdrop-blur-sm min-w-[280px]"
         >
-          {isGenerating ? "..." : "Go"}
-        </button>
-      </form>
+          <input
+            type="text"
+            className="flex-1 text-sm p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Ask Grok... (Press Enter to submit)"
+            value={promptInput}
+            onChange={(e) => setPromptInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isGenerating}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={handleGrokSubmit}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <span className="flex items-center gap-1">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Generating...
+              </span>
+            ) : (
+              "Ask"
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
