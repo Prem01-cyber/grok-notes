@@ -42,9 +42,48 @@ export default function Editor({ currentNote, onSave }) {
   const [title, setTitle] = useState(currentNote.title);
   const [showPrompt, setShowPrompt] = useState(false);
   const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
+  const [currentNodePos, setCurrentNodePos] = useState(null);
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const editorRef = useRef(null);
+
+  const updatePromptPosition = (pos) => {
+    if (!editor || !editorRef.current) return;
+    
+    const coords = editor.view.coordsAtPos(pos);
+    const editorElement = editorRef.current;
+    const editorRect = editorElement.getBoundingClientRect();
+    
+    // Calculate position relative to the editor container
+    const x = coords.left - editorRect.left;
+    const y = coords.top - editorRect.top;
+    
+    setPromptPosition({ x, y });
+    setCurrentNodePos(pos);
+  };
+
+  const moveToNextNode = () => {
+    if (!editor || !currentNodePos) return;
+
+    const { state } = editor;
+    const { doc } = state;
+    let nextPos = currentNodePos;
+
+    // Find the end of current node
+    const currentNode = doc.resolve(currentNodePos).parent;
+    const endOfNode = currentNodePos + currentNode.nodeSize;
+
+    // Find the start of next node
+    if (endOfNode < doc.content.size) {
+      nextPos = endOfNode;
+      updatePromptPosition(nextPos);
+    } else {
+      // If we're at the end of the document, create a new paragraph
+      editor.commands.createParagraphNear();
+      const newPos = editor.state.selection.from;
+      updatePromptPosition(newPos);
+    }
+  };
 
   const editor = useEditor({
     extensions: [
@@ -77,15 +116,7 @@ export default function Editor({ currentNote, onSave }) {
           
           // Check if we're at the start of a node
           if ($from.parentOffset === 0) {
-            const coords = view.coordsAtPos(selection.from);
-            const editorElement = editorRef.current;
-            const editorRect = editorElement.getBoundingClientRect();
-            
-            // Calculate position relative to the editor container
-            const x = coords.left - editorRect.left;
-            const y = coords.top - editorRect.top;
-            
-            setPromptPosition({ x, y });
+            updatePromptPosition(selection.from);
             setShowPrompt(true);
             event.preventDefault();
             return true;
@@ -143,32 +174,21 @@ export default function Editor({ currentNote, onSave }) {
 
   // Update prompt position on scroll
   useEffect(() => {
-    if (!showPrompt || !editor || !editorRef.current) return;
+    if (!showPrompt || !editor || !editorRef.current || !currentNodePos) return;
 
     const updatePosition = () => {
-      const { state } = editor;
-      const { selection } = state;
-      const coords = editor.view.coordsAtPos(selection.from);
-      const editorElement = editorRef.current;
-      const editorRect = editorElement.getBoundingClientRect();
-      
-      // Calculate position relative to the editor container
-      const x = coords.left - editorRect.left;
-      const y = coords.top - editorRect.top;
-      
-      setPromptPosition({ x, y });
+      updatePromptPosition(currentNodePos);
     };
 
     window.addEventListener('scroll', updatePosition, true);
     return () => window.removeEventListener('scroll', updatePosition, true);
-  }, [showPrompt, editor]);
+  }, [showPrompt, editor, currentNodePos]);
 
   const handleGrokSubmit = async (e) => {
     e.preventDefault();
     if (!promptInput.trim() || !editor) return;
 
     setIsGenerating(true);
-    // Don't close the prompt here anymore
 
     const noteJSON = editor.getJSON();
     const stream = streamGrokText({
@@ -181,119 +201,119 @@ export default function Editor({ currentNote, onSave }) {
     const startPos = editor.state.selection.from;
     let pos = startPos;
 
+    // Function to scroll to position
+    const scrollToPosition = (position) => {
+      const coords = editor.view.coordsAtPos(position);
+      const editorElement = editorRef.current;
+      if (!editorElement) return;
+
+      const container = editorElement.closest('.ProseMirror');
+      if (!container) return;
+
+      // Calculate the scroll position to center the content
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = editorElement.getBoundingClientRect();
+      const relativeTop = coords.top - elementRect.top;
+      const targetScroll = container.scrollTop + relativeTop - (containerRect.height / 2);
+
+      // Smooth scroll to the target position
+      container.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+      });
+    };
+
+    // Function to convert HTML nodes to TipTap JSON
+    const convertNodeToJSON = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent.trim();
+        // Only skip if completely empty, preserve whitespace
+        if (text === '') {
+          return null;
+        }
+        return { type: 'text', text: node.textContent };
+      }
+
+      const children = Array.from(node.childNodes)
+        .map(convertNodeToJSON)
+        .filter(child => child !== null);
+      
+      switch (node.nodeName.toLowerCase()) {
+        case 'h1':
+        case 'h2':
+        case 'h3':
+        case 'h4':
+        case 'h5':
+        case 'h6':
+          return {
+            type: 'heading',
+            attrs: { level: parseInt(node.nodeName[1]) },
+            content: children.length > 0 ? children : [{ type: 'text', text: ' ' }]
+          };
+        case 'p':
+          return {
+            type: 'paragraph',
+            content: children.length > 0 ? children : [{ type: 'text', text: ' ' }]
+          };
+        case 'strong':
+        case 'b':
+          return {
+            type: 'text',
+            marks: [{ type: 'bold' }],
+            text: node.textContent || ' '
+          };
+        case 'em':
+        case 'i':
+          return {
+            type: 'text',
+            marks: [{ type: 'italic' }],
+            text: node.textContent || ' '
+          };
+        case 'code':
+          return {
+            type: 'text',
+            marks: [{ type: 'code' }],
+            text: node.textContent || ' '
+          };
+        case 'pre':
+          return {
+            type: 'codeBlock',
+            content: [{ type: 'text', text: node.textContent || ' ' }]
+          };
+        case 'ul':
+          return {
+            type: 'bulletList',
+            content: children.filter(child => child.type === 'listItem')
+          };
+        case 'ol':
+          return {
+            type: 'orderedList',
+            content: children.filter(child => child.type === 'listItem')
+          };
+        case 'li':
+          return {
+            type: 'listItem',
+            content: [{
+              type: 'paragraph',
+              content: children.length > 0 ? children : [{ type: 'text', text: ' ' }]
+            }]
+          };
+        default:
+          return {
+            type: 'paragraph',
+            content: children.length > 0 ? children : [{ type: 'text', text: ' ' }]
+          };
+      }
+    };
+
     try {
+      // First, collect all the content
       for await (const rawChunk of stream) {
         const chunk = decodeChunk(rawChunk);
         fullMarkdown += chunk;
-
-        editor.commands.command(({ tr, dispatch }) => {
-          tr.insertText(chunk, pos);
-          pos += chunk.length;
-          if (dispatch) dispatch(tr);
-          return true;
-        });
-
-        await new Promise((r) => setTimeout(r, 10));
       }
 
-      editor.commands.command(({ tr, dispatch }) => {
-        tr.delete(startPos, pos);
-        if (dispatch) dispatch(tr);
-        return true;
-      });
-
-      // Function to convert HTML nodes to TipTap JSON
-      const convertNodeToJSON = (node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          // Skip empty text nodes
-          if (!node.textContent.trim()) {
-            return null;
-          }
-          return { type: 'text', text: node.textContent };
-        }
-
-        const children = Array.from(node.childNodes)
-          .map(convertNodeToJSON)
-          .filter(child => child !== null); // Filter out null nodes
-        
-        switch (node.nodeName.toLowerCase()) {
-          case 'h1':
-          case 'h2':
-          case 'h3':
-          case 'h4':
-          case 'h5':
-          case 'h6':
-            return {
-              type: 'heading',
-              attrs: { level: parseInt(node.nodeName[1]) },
-              content: children
-            };
-          case 'p':
-            // Ensure paragraph has proper content
-            if (children.length === 0) {
-              return null; // Skip empty paragraphs
-            }
-            return {
-              type: 'paragraph',
-              content: children
-            };
-          case 'strong':
-          case 'b':
-            return {
-              type: 'text',
-              marks: [{ type: 'bold' }],
-              text: node.textContent.trim() || ' ' // Ensure non-empty text
-            };
-          case 'em':
-          case 'i':
-            return {
-              type: 'text',
-              marks: [{ type: 'italic' }],
-              text: node.textContent.trim() || ' ' // Ensure non-empty text
-            };
-          case 'code':
-            return {
-              type: 'text',
-              marks: [{ type: 'code' }],
-              text: node.textContent.trim() || ' ' // Ensure non-empty text
-            };
-          case 'pre':
-            return {
-              type: 'codeBlock',
-              content: [{ type: 'text', text: node.textContent.trim() || ' ' }]
-            };
-          case 'ul':
-            return {
-              type: 'bulletList',
-              content: children.filter(child => child.type === 'listItem')
-            };
-          case 'ol':
-            return {
-              type: 'orderedList',
-              content: children.filter(child => child.type === 'listItem')
-            };
-          case 'li':
-            // Ensure list items have proper content
-            if (children.length === 0) {
-              return null; // Skip empty list items
-            }
-            return {
-              type: 'listItem',
-              content: children
-            };
-          default:
-            // Skip empty nodes
-            if (children.length === 0) {
-              return null;
-            }
-            return {
-              type: 'paragraph',
-              content: children
-            };
-        }
-      };
-
-      // Convert markdown to HTML and then to TipTap JSON
+      // Then process and insert the content
       const htmlContent = marked.parse(fullMarkdown);
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlContent;
@@ -302,71 +322,71 @@ export default function Editor({ currentNote, onSave }) {
       const processContent = (nodes) => {
         return nodes
           .map(node => {
-            // Skip null nodes
             if (!node) return null;
 
-            // Handle text nodes with marks
+            // Handle text nodes
             if (node.type === 'text') {
-              // Ensure text is not empty
-              if (!node.text?.trim()) {
-                return null;
-              }
-              return node;
+              return node.text ? node : null;
             }
             
-            // Ensure paragraphs have proper content
+            // Handle paragraphs
             if (node.type === 'paragraph') {
-              const content = node.content || [];
-              // If content is empty or contains invalid nodes, skip it
-              if (content.length === 0 || !content.every(c => c.type === 'text')) {
-                return null;
-              }
-              return node;
+              return {
+                type: 'paragraph',
+                content: node.content?.filter(c => c.type === 'text' && c.text) || [{ type: 'text', text: ' ' }]
+              };
             }
             
-            // Ensure lists have proper structure
+            // Handle lists
             if (node.type === 'bulletList' || node.type === 'orderedList') {
               const validItems = node.content
                 .map(item => ({
                   type: 'listItem',
                   content: [{
                     type: 'paragraph',
-                    content: item.content?.[0]?.content?.filter(c => c.type === 'text' && c.text?.trim()) || []
+                    content: item.content?.[0]?.content?.filter(c => c.type === 'text' && c.text) || [{ type: 'text', text: ' ' }]
                   }]
                 }))
-                .filter(item => item.content[0].content.length > 0);
+                .filter(item => item.content[0].content.some(c => c.text.trim()));
 
-              if (validItems.length === 0) {
-                return null;
-              }
-
-              return {
+              return validItems.length > 0 ? {
                 type: node.type,
                 content: validItems
-              };
+              } : null;
             }
             
             return node;
           })
-          .filter(node => node !== null); // Remove null nodes
+          .filter(node => node !== null);
       };
 
       const content = processContent(Array.from(tempDiv.childNodes).map(convertNodeToJSON));
       
       // Insert each node separately to ensure proper structure
-      content.forEach(node => {
+      for (const node of content) {
         if (node && (node.type === 'paragraph' || node.type === 'heading' || 
             node.type === 'bulletList' || node.type === 'orderedList' || 
             node.type === 'codeBlock')) {
           editor.commands.insertContent(node);
+          // Update position and scroll after each node insertion
+          pos = editor.state.selection.from;
+          scrollToPosition(pos);
+          // Add a small delay to ensure smooth scrolling
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
-      });
+      }
+
+      // Move to next node after content is inserted
+      moveToNextNode();
+      
+      // Final scroll to ensure we're at the right position
+      scrollToPosition(editor.state.selection.from);
     } catch (error) {
       console.error('Error generating text:', error);
     } finally {
       setIsGenerating(false);
       setPromptInput("");
-      setShowPrompt(false); // Close the prompt only after streaming is complete
+      setShowPrompt(false);
     }
   };
 
@@ -376,6 +396,16 @@ export default function Editor({ currentNote, onSave }) {
       handleGrokSubmit(e);
     }
   };
+
+  // Add smooth scrolling to the editor container
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    const container = editorRef.current.closest('.ProseMirror');
+    if (container) {
+      container.style.scrollBehavior = 'smooth';
+    }
+  }, [editorRef.current]);
 
   return (
     <div className="relative min-h-screen">
