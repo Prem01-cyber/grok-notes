@@ -7,9 +7,11 @@ router = APIRouter()
 
 class PromptInput(BaseModel):
     text: str
-
+    note_title: str
+    note_context: str
+    
 @router.post("/generate/stream")
 async def generate_stream(input: PromptInput) -> StreamingResponse:
-    generator = stream_grok_response(input.text)
+    generator = stream_grok_response(input.text, input.note_title, input.note_context)
     return StreamingResponse(generator, media_type="text/plain")
 

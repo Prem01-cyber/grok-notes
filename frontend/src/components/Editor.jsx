@@ -56,7 +56,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       StarterKit.configure({
         bulletList: { keepMarks: true },
         heading: {
-          levels: [1, 2, 3, 4, 5, 6]
+          levels: [1, 2, 3]
         },
         codeBlock: {
           HTMLAttributes: {
@@ -193,11 +193,11 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
     const noteJSON = editor.getJSON();
     try {
-      // console.log('📝 Sending request to streamGrokText with payload:', {
-      //   text: promptInput,
-      //   note_title: title,
-      //   note_context: extractStructuredContext(noteJSON),
-      // });
+      console.log('📝 Sending request to streamGrokText with payload:', {
+        text: promptInput,
+        note_title: title,
+        note_context: extractStructuredContext(noteJSON),
+      });
 
       const response = await streamGrokText({
         text: promptInput,
@@ -205,7 +205,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
         note_context: extractStructuredContext(noteJSON),
       });
 
-      // console.log('📥 Response received in Editor:', response);
+      console.log('📥 Response received in Editor:', response);
 
       if (!response) {
         throw new Error('No response received from streamGrokText');
