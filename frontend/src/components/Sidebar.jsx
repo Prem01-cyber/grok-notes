@@ -46,9 +46,6 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
       // If the deleted note was selected, select the first available note
       if (selectedId === noteId && updatedNotes.length > 0) {
         onSelect(updatedNotes[0]);
-      } else if (updatedNotes.length === 0) {
-        // If no notes left, create a new one
-        createNewNote();
       }
     } catch (error) {
       console.error('Failed to delete note:', error);
