@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
@@ -45,10 +45,38 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const [title, setTitle] = useState(currentNote?.title || "");
   const [showPrompt, setShowPrompt] = useState(false);
   const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
+  const [saveStatus, setSaveStatus] = useState({ status: 'idle', error: null });
+  const [streamStatus, setStreamStatus] = useState({ isStreaming: false, progress: 0 });
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const editorRef = useRef(null);
   const streamBufferRef = useRef("");
+  const saveTimeoutRef = useRef(null);
+
+  // Debounced save function
+  const debouncedSave = useCallback(async (content) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    setSaveStatus({ status: 'saving', error: null });
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const updated = {
+          ...currentNote,
+          title: title,
+          content_json: JSON.stringify(content),
+        };
+        await saveNote(updated);
+        if (onSave) onSave(updated);
+        setSaveStatus({ status: 'saved', error: null });
+      } catch (error) {
+        console.error('Failed to save note:', error);
+        setSaveStatus({ status: 'error', error: error.message });
+      }
+    }, 1000); // 1 second debounce
+  }, [currentNote, title, onSave]);
 
   // Initialize TipTap editor with desired extensions and content
   const editor = useEditor({
@@ -74,12 +102,10 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       if (onSave && currentNote) {
         try {
           const json = editor.getJSON();
-          onSave({
-            ...currentNote,
-            content_json: JSON.stringify(json)
-          });
+          debouncedSave(json);
         } catch (e) {
           console.error("Failed to get editor content", e);
+          setSaveStatus({ status: 'error', error: 'Failed to process content' });
         }
       }
     },
@@ -185,11 +211,21 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     return () => window.removeEventListener('scroll', updatePosition, true);
   }, [showPrompt, editor]);
 
+  // Cleanup save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleGrokSubmit = async (e) => {
     e.preventDefault();
     if (!promptInput.trim() || !editor) return;
 
     setIsGenerating(true);
+    setStreamStatus({ isStreaming: true, progress: 0 });
 
     const noteJSON = editor.getJSON();
     try {
@@ -224,6 +260,14 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let totalBytes = 0;
+      let receivedBytes = 0;
+
+      // Get total content length if available
+      const contentLength = response.headers.get('content-length');
+      if (contentLength) {
+        totalBytes = parseInt(contentLength, 10);
+      }
 
       while (true) {
         const { done, value } = await reader.read();
@@ -235,6 +279,15 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
         const chunk = decoder.decode(value);
         const decodedChunk = decodeChunk(chunk);
+        
+        // Update progress
+        receivedBytes += value.length;
+        if (totalBytes > 0) {
+          setStreamStatus(prev => ({
+            ...prev,
+            progress: Math.min(100, Math.round((receivedBytes / totalBytes) * 100))
+          }));
+        }
         
         // Stream the chunk using our markdown-aware streaming function
         streamMarkdownToEditor(decodedChunk);
@@ -255,6 +308,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       });
     } finally {
       setIsGenerating(false);
+      setStreamStatus({ isStreaming: false, progress: 0 });
       setPromptInput("");
       setShowPrompt(false);
     }
@@ -870,12 +924,15 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       );
       const docContent = flattenContent(contentNodes);
       const doc = { type: "doc", content: docContent };
+      
       // Preserve current scroll position to prevent jump on content update
       const editorEl = document.querySelector(".editor-content");
       const prevScrollTop = editorEl ? editorEl.scrollTop : null;
+      
       // Update the editor with new content (without focusing or resetting selection)
       editor.commands.setContent(doc, false);
-      // Restore scroll position (note: if user was at bottom, new content will not auto-scroll into view with this approach)
+      
+      // Restore scroll position
       if (prevScrollTop !== null && editorEl) {
         editorEl.scrollTop = prevScrollTop;
       }
@@ -902,8 +959,48 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          <div className="ml-4 text-sm">
+            {saveStatus.status === 'saving' && (
+              <span className="text-gray-500 flex items-center">
+                <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Saving...
+              </span>
+            )}
+            {saveStatus.status === 'saved' && (
+              <span className="text-green-500">Saved</span>
+            )}
+            {saveStatus.status === 'error' && (
+              <span className="text-red-500" title={saveStatus.error}>
+                Save failed
+              </span>
+            )}
+          </div>
         </div>
         <EditorContent editor={editor} ref={editorRef} />
+        
+        {/* Add streaming progress indicator */}
+        {streamStatus.isStreaming && (
+          <div className="absolute bottom-4 right-4 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-2">
+            <div className="w-4 h-4">
+              <svg className="animate-spin" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+            <span className="text-sm text-gray-600">Generating response...</span>
+            {streamStatus.progress > 0 && (
+              <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                  style={{ width: `${streamStatus.progress}%` }}
+                />
+              </div>
+            )}
+          </div>
+        )}
         
         {showPrompt && (
           <div
