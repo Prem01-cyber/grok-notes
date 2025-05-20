@@ -224,97 +224,24 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let fullMarkdown = "";
-      const startPos = editor.state.selection.from;
-      let pos = startPos;
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // Mark stream as complete and flush buffer
+          streamMarkdownToEditor("", true);
+          break;
+        }
 
         const chunk = decoder.decode(value);
-        // console.log('📦 Received chunk:', chunk);
         const decodedChunk = decodeChunk(chunk);
-        fullMarkdown += decodedChunk;
-
-        editor.commands.command(({ tr, dispatch }) => {
-          tr.insertText(decodedChunk, pos);
-          pos += decodedChunk.length;
-          if (dispatch) dispatch(tr);
-          return true;
-        });
-
+        
+        // Stream the chunk using our markdown-aware streaming function
+        streamMarkdownToEditor(decodedChunk);
+        
+        // Small delay to prevent overwhelming the UI
         await new Promise((r) => setTimeout(r, 10));
       }
-
-      editor.commands.command(({ tr, dispatch }) => {
-        tr.delete(startPos, pos);
-        if (dispatch) dispatch(tr);
-        return true;
-      });
-
-      // Convert markdown to HTML and then to TipTap JSON
-      const htmlContent = marked.parse(fullMarkdown);
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = htmlContent;
-
-      // Process the content and ensure proper structure
-      const processContent = (nodes) => {
-        return nodes
-          .map(node => {
-            if (!node) return null;
-
-            if (node.type === 'text') {
-              if (!node.text?.trim()) {
-                return null;
-              }
-              return node;
-            }
-            
-            if (node.type === 'paragraph') {
-              const content = node.content || [];
-              if (content.length === 0 || !content.every(c => c.type === 'text')) {
-                return null;
-              }
-              return node;
-            }
-            
-            if (node.type === 'bulletList' || node.type === 'orderedList') {
-              const validItems = node.content
-                .map(item => ({
-                  type: 'listItem',
-                  content: [{
-                    type: 'paragraph',
-                    content: item.content?.[0]?.content?.filter(c => c.type === 'text' && c.text?.trim()) || []
-                  }]
-                }))
-                .filter(item => item.content[0].content.length > 0);
-
-              if (validItems.length === 0) {
-                return null;
-              }
-
-              return {
-                type: node.type,
-                content: validItems
-              };
-            }
-            
-            return node;
-          })
-          .filter(node => node !== null);
-      };
-
-      const content = processContent(Array.from(tempDiv.childNodes).map(convertNodeToJSON));
-      
-      // Insert each node separately to ensure proper structure
-      content.forEach(node => {
-        if (node && (node.type === 'paragraph' || node.type === 'heading' || 
-            node.type === 'bulletList' || node.type === 'orderedList' || 
-            node.type === 'codeBlock')) {
-          editor.commands.insertContent(node);
-        }
-      });
     } catch (error) {
       console.error('Error generating text:', error);
       // Show error to user
