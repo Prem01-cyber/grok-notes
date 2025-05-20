@@ -80,3 +80,16 @@ export async function saveNote(note) {
     console.error("Failed to save note", err);
   }
 }
+
+export async function deleteNote(noteId) {
+  const response = await fetch(`${API_BASE}/notes/${noteId}`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || 'Failed to delete note');
+  }
+
+  return response.json();
+}

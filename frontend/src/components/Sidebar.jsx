@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { getAllNotes, saveNote } from "../api";
+import { getAllNotes, saveNote, deleteNote } from "../api";
 
 export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   async function fetchNotes() {
     const data = await getAllNotes();
@@ -28,6 +29,33 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
     const updatedNotes = [...notes, note];
     setNotes(updatedNotes);
     onSelect(note);
+  };
+
+  const handleDeleteNote = async (noteId, e) => {
+    e.stopPropagation(); // Prevent note selection when clicking delete
+    if (!window.confirm('Are you sure you want to delete this note?')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await deleteNote(noteId);
+      const updatedNotes = notes.filter(note => note.id !== noteId);
+      setNotes(updatedNotes);
+      
+      // If the deleted note was selected, select the first available note
+      if (selectedId === noteId && updatedNotes.length > 0) {
+        onSelect(updatedNotes[0]);
+      } else if (updatedNotes.length === 0) {
+        // If no notes left, create a new one
+        createNewNote();
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      alert('Failed to delete note. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const filteredNotes = notes.filter(note =>
@@ -100,7 +128,7 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
             <div
               key={note.id}
               onClick={() => onSelect(note)}
-              className={`cursor-pointer px-3 py-2 rounded-lg transition-colors ${
+              className={`cursor-pointer px-3 py-2 rounded-lg transition-colors group ${
                 selectedId === note.id
                   ? 'bg-blue-50 text-blue-700'
                   : 'hover:bg-gray-50'
@@ -111,9 +139,31 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
                   <span className="text-lg">📝</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400">📝</span>
-                  <span className="truncate">{note.title || `Note ${note.id}`}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-gray-400">📝</span>
+                    <span className="truncate">{note.title || `Note ${note.id}`}</span>
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteNote(note.id, e)}
+                    disabled={isDeleting}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all"
+                    title="Delete note"
+                  >
+                    <svg
+                      className="w-4 h-4 text-red-500 hover:text-red-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
                 </div>
               )}
             </div>

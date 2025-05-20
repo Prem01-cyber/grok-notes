@@ -38,3 +38,13 @@ def list_notes():
         notes = session.exec(select(Note)).all()
         return notes
 
+@router.delete("/notes/{note_id}")
+def delete_note(note_id: int):
+    with get_session() as session:
+        note = session.get(Note, note_id)
+        if not note:
+            raise HTTPException(status_code=404, detail="Note not found")
+        session.delete(note)
+        session.commit()
+        return {"message": "Note deleted successfully"}
+
