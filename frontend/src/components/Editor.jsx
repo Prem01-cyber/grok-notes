@@ -255,6 +255,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     setIsGenerating(true);
     setStreamStatus({ isStreaming: true, progress: 0 });
 
+    // Store the current selection or cursor position for inserting generated content
+    selectionRef.current = editor.state.selection;
     const noteJSON = editor.getJSON();
     try {
       console.log('📝 Sending request to streamGrokText with payload:', {
@@ -351,42 +353,56 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
   // Stream markdown text into the editor as TipTap content, chunk by chunk.
   const streamMarkdownToEditor = (markdownChunk, isFinal = false) => {
-    if (!editor || !markdownChunk) {
+    if (!editor) {
       return;
     }
     // Append this chunk to the cumulative buffer
     streamBufferRef.current += markdownChunk;
     const fullMarkdown = streamBufferRef.current;
     try {
-      // Parse the accumulated markdown into an AST
-      const ast = unified().use(remarkParse).parse(fullMarkdown);
-      // Convert AST to TipTap JSON document
-      const contentNodes = ast.children.map((child) =>
-        convertNodeToJSON(child)
-      );
-      const docContent = flattenContent(contentNodes);
-      const doc = { type: "doc", content: docContent };
+      // Insert each chunk as plain text for streaming effect
+      if (markdownChunk) {
+        if (!selectionRef.current.streamStart) {
+          // Record the starting position for streaming content
+          selectionRef.current.streamStart = editor.state.selection.from;
+        }
+        editor.commands.insertContent(markdownChunk);
+      }
       
-      // Preserve current scroll position to prevent jump on content update
-      const editorEl = document.querySelector(".editor-content");
-      const prevScrollTop = editorEl ? editorEl.scrollTop : null;
-      
-      // Update the editor with new content (without focusing or resetting selection)
-      editor.commands.setContent(doc, false);
-      
-      // Restore scroll position
-      if (prevScrollTop !== null && editorEl) {
-        editorEl.scrollTop = prevScrollTop;
+      if (isFinal && fullMarkdown) {
+        // Parse the accumulated markdown into an AST
+        const ast = unified().use(remarkParse).parse(fullMarkdown);
+        // Convert AST to TipTap JSON document
+        const contentNodes = ast.children.map((child) =>
+          convertNodeToJSON(child)
+        );
+        const docContent = flattenContent(contentNodes);
+        
+        // Replace the streamed content with parsed markdown
+        if (selectionRef.current && selectionRef.current.streamStart !== undefined) {
+          const startPos = selectionRef.current.streamStart;
+          const endPos = editor.state.selection.to;
+          editor.commands.setTextSelection({ from: startPos, to: endPos });
+          editor.commands.deleteSelection();
+          editor.commands.setTextSelection(startPos);
+          editor.commands.insertContent(docContent);
+        } else {
+          editor.commands.insertContent(docContent);
+        }
       }
     } catch (error) {
       console.error("Error streaming markdown text:", error);
-      // If parsing fails (e.g., mid-syntax), insert the raw chunk as plain text so the user sees something.
-      // This content will be replaced on the next successful parse.
-      editor.chain().focus().insertContent(markdownChunk).run();
+      // If parsing fails, show error message only when stream is complete
+      if (isFinal) {
+        editor.chain().focus().insertContent("Error parsing response.").run();
+      }
     } finally {
       if (isFinal) {
-        // Clear the buffer when the stream is complete (prevents carry-over to the next use)
+        // Clear the buffer and stream start position when the stream is complete
         streamBufferRef.current = "";
+        if (selectionRef.current) {
+          selectionRef.current.streamStart = undefined;
+        }
       }
     }
   };
