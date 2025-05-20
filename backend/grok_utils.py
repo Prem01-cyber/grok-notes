@@ -21,20 +21,32 @@ def get_summary_from_grok(text: str) -> str:
 
 def stream_grok_response(text: str, note_title: str, note_context: str):
     try:
-        full_prompt = (
-            f"You are assisting with a knowledge-based note-taking application.\n"
-            f"The user is currently working on a note titled '{note_title}'.\n"
-            f"Here is the context of their note:\n{note_context}\n\n"
-            f"The user now wants help with:\n{text}\n\n"
-            f"Respond with a helpful, clear, and concise explanation that expands on the topic based on the note context. "
-            f"Use bullet points or structured formatting if it improves clarity. Avoid repeating information unnecessarily."
+        # 👇 Construct the user prompt with contextual grounding
+        user_prompt = (
+            f"You are working inside a structured notes application.\n"
+            f"The user is editing a note titled: '{note_title}'.\n\n"
+            f"Here is the relevant context from the note:\n{note_context}\n\n"
+            f"The user instruction is:\n{text}\n\n"
+            f"Please provide a response that is informative, clear, and helpful.\n"
+            f"Use bullet points, subheadings, or code blocks if they improve readability.\n"
+            f"Do not repeat what is already in the context unless it's necessary for clarity.\n"
         )
 
         response = client.chat.completions.create(
             model="grok-3-latest",
             messages=[
-                {"role": "system", "content": "You are a helpful AI assistant for an intelligent note-taking app. Your job is to expand and clarify user notes based on their structure and context."},
-                {"role": "user", "content": full_prompt}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an intelligent assistant integrated into a structured note-taking app "
+                        "like Notion. Your goal is to help users expand, explain, or improve their notes "
+                        "based on existing context. Be concise, context-aware, and use formatting to aid clarity."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt
+                }
             ],
             stream=True
         )
@@ -45,4 +57,3 @@ def stream_grok_response(text: str, note_title: str, note_context: str):
 
     except Exception as e:
         yield f"[Error] {str(e)}"
-
