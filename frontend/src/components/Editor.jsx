@@ -53,31 +53,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const editorRef = useRef(null);
   const streamBufferRef = useRef("");
   const saveTimeoutRef = useRef(null);
-
-  // Debounced save function
-  const debouncedSave = useCallback(async (content) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    setSaveStatus({ status: 'saving', error: null });
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        const updated = {
-          ...currentNote,
-          title: title,
-          content_json: JSON.stringify(content),
-        };
-        await saveNote(updated);
-        if (onSave) onSave(updated);
-        setSaveStatus({ status: 'saved', error: null });
-      } catch (error) {
-        console.error('Failed to save note:', error);
-        setSaveStatus({ status: 'error', error: error.message });
-      }
-    }, 1000); // 1 second debounce
-  }, [currentNote, title, onSave]);
+  const selectionRef = useRef(null);
+  const editorInstanceRef = useRef(null);
 
   // Initialize TipTap editor with desired extensions and content
   const editor = useEditor({
@@ -98,9 +75,9 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
     ],
     content: currentNote?.content_json ? JSON.parse(currentNote.content_json) : "",
-    onUpdate: ({ editor }) => {
-      // Trigger callback on content change if provided
-      if (onSave && currentNote) {
+    onUpdate: ({ editor, transaction }) => {
+      // Only trigger save if the content actually changed
+      if (transaction.docChanged && onSave && currentNote) {
         try {
           const json = editor.getJSON();
           debouncedSave(json);
@@ -143,6 +120,49 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     },
   });
 
+  // Store editor instance in ref
+  useEffect(() => {
+    editorInstanceRef.current = editor;
+  }, [editor]);
+
+  // Debounced save function
+  const debouncedSave = useCallback(async (content) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    setSaveStatus({ status: 'saving', error: null });
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const editor = editorInstanceRef.current;
+        if (!editor) return;
+
+        // Get current selection before save
+        const { from, to } = editor.state.selection;
+
+        const updated = {
+          ...currentNote,
+          title: title,
+          content_json: JSON.stringify(content),
+        };
+        await saveNote(updated);
+        if (onSave) onSave(updated);
+        setSaveStatus({ status: 'saved', error: null });
+
+        // Restore selection after save
+        requestAnimationFrame(() => {
+          if (editor && editor.isActive) {
+            editor.commands.setTextSelection({ from, to });
+          }
+        });
+      } catch (error) {
+        console.error('Failed to save note:', error);
+        setSaveStatus({ status: 'error', error: error.message });
+      }
+    }, 1000); // 1 second debounce
+  }, [currentNote, title, onSave]);
+
   // Close prompt when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -160,7 +180,14 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     if (editor && currentNote?.content_json) {
       try {
         const content = JSON.parse(currentNote.content_json);
+        const { from, to } = editor.state.selection;
         editor.commands.setContent(content);
+        // Restore cursor position after content update
+        requestAnimationFrame(() => {
+          if (editor && editor.isActive) {
+            editor.commands.setTextSelection({ from, to });
+          }
+        });
       } catch (e) {
         console.error("Failed to set initial content:", e);
       }
