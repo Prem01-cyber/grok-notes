@@ -7,15 +7,15 @@ export default function App() {
   const [notes, setNotes] = useState([]);
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
       <Sidebar
         notes={notes}
         setNotes={setNotes}
         selectedId={selectedNote?.id}
         onSelect={(note) => setSelectedNote(note)}
       />
-      <main className="flex-1 p-4">
-        <h1 className="text-3xl font-bold mb-4">Notes Taker</h1>
+      <main className="p-4 ml-64 transition-all duration-300">
+        {/* <h1 className="text-3xl font-bold mb-4">Notes Taker</h1> */}
         {selectedNote ? (
           <Editor
             currentNote={selectedNote}
