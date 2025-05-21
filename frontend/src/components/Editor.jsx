@@ -5,6 +5,8 @@ import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import Bold from "@tiptap/extension-bold";
+import { Table } from "../extensions/Table";
+import TableToolbar from "./TableToolbar";
 // If needed, import other extensions (like Link, Image, Underline) if their nodes/marks are used.
 import { unified } from "unified";
 import remarkParse from "remark-parse";
@@ -73,6 +75,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
+      Table,
     ],
     content: currentNote?.content_json ? JSON.parse(currentNote.content_json) : "",
     onUpdate: ({ editor, transaction }) => {
@@ -437,6 +440,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             )}
           </div>
         </div>
+        <TableToolbar editor={editor} />
         <EditorContent editor={editor} ref={editorRef} />
         
         {/* Add streaming progress indicator */}
