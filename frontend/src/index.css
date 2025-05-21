@@ -7,6 +7,12 @@ body {
   background: #f9fafb;
   color: #1f2937;
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark {
+  background: #121212;
+  color: #e2e8f0;
 }
 
 /* TipTap container */
@@ -20,6 +26,12 @@ body {
   tab-size: 4;
   line-height: 1.7;
   color: #374151;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+body.dark .tiptap {
+  color: #e2e8f0;
+  background-color: #1e1e1e;
 }
 
 /* Placeholder */

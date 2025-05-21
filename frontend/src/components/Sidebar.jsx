@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAllNotes, saveNote, deleteNote } from "../api";
 
-export default function Sidebar({ onSelect, selectedId, notes, setNotes, isCollapsed, setIsCollapsed }) {
+export default function Sidebar({ onSelect, selectedId, notes, setNotes, isCollapsed, setIsCollapsed, theme, toggleTheme }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -60,24 +60,39 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
 
   return (
     <div className="relative">
-      <div className={`fixed top-0 left-0 h-screen bg-white border-r transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`fixed top-0 left-0 h-screen ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-r'} transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="h-full flex flex-col">
           {/* Toggle Button */}
-          <div className="relative">
-            <button
-              onClick={() => setIsCollapsed(prev => !prev)}
-              className="absolute -right-3 top-4 bg-white border rounded-full p-1 shadow-sm hover:bg-gray-50 transition-colors z-50"
-            >
-              <svg
-                className={`w-4 h-4 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="relative">
+              <button
+                onClick={() => setIsCollapsed(prev => !prev)}
+                className={`absolute -right-3 top-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 hover:bg-gray-700' : 'bg-white border rounded-full'} p-1 shadow-sm hover:bg-gray-50 transition-colors z-50`}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
+                <svg
+                  className={`w-4 h-4 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className={`absolute -right-3 top-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 hover:bg-gray-700' : 'bg-white border rounded-full'} p-1 shadow-sm hover:bg-gray-50 transition-colors z-50`}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.021 11.314l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                  </svg>
+                )}
+              </button>
+            </div>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
@@ -85,11 +100,11 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
               {!isCollapsed && (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold flex items-center gap-2">
+                    <h2 className={`text-lg font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
                       <span className="text-blue-600">📝</span>
                       Notes
                     </h2>
-                    <span className="text-sm text-gray-500">{notes.length}</span>
+                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{notes.length}</span>
                   </div>
 
                   {/* Search Bar */}
@@ -99,10 +114,10 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                       placeholder="Search notes..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-black'}`}
                     />
                     <svg
-                      className="absolute right-3 top-2.5 w-4 h-4 text-gray-400"
+                      className={`absolute right-3 top-2.5 w-4 h-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-400'}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -132,8 +147,8 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                     onClick={() => onSelect(note)}
                     className={`cursor-pointer px-3 py-2 rounded-lg transition-colors group ${
                       selectedId === note.id
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'hover:bg-gray-50'
+                        ? theme === 'dark' ? 'bg-blue-900 text-blue-300' : 'bg-blue-50 text-blue-700'
+                        : theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
                     }`}
                   >
                     {isCollapsed ? (

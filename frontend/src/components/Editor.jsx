@@ -43,7 +43,7 @@ function extractStructuredContext(json) {
     .join("\n");
 }
 
-const Editor = ({ currentNote, onSave, ...props }) => {
+const Editor = ({ currentNote, onSave, theme, ...props }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptInput, setPromptInput] = useState("");
   const [title, setTitle] = useState(currentNote?.title || "");
@@ -787,17 +787,17 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
   return (
     <div className="relative min-h-screen">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md border border-gray-300 p-6 mt-3 mb-3 relative overflow-x-auto">
+      <div className={`max-w-4xl mx-auto rounded-xl shadow-md border p-6 mt-3 mb-3 relative overflow-x-auto ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}>
         <div className="flex justify-between items-center mb-4">
           <input
             type="text"
-            className="text-2xl font-semibold w-full border-b border-gray-300 focus:outline-none focus:border-blue-500 transition-colors"
+            className={`text-2xl font-semibold w-full border-b focus:outline-none focus:border-blue-500 transition-colors ${theme === 'dark' ? 'text-white border-gray-600 bg-gray-800' : 'text-black border-gray-300 bg-white'}`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <div className="ml-4 text-sm">
             {saveStatus.status === 'saving' && (
-              <span className="text-gray-500 flex items-center">
+              <span className={`flex items-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
                 <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -806,10 +806,10 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               </span>
             )}
             {saveStatus.status === 'saved' && (
-              <span className="text-green-500">Saved</span>
+              <span className={theme === 'dark' ? 'text-green-400' : 'text-green-500'}>Saved</span>
             )}
             {saveStatus.status === 'error' && (
-              <span className="text-red-500" title={saveStatus.error}>
+              <span className={theme === 'dark' ? 'text-red-400' : 'text-red-500'} title={saveStatus.error}>
                 Save failed
               </span>
             )}
