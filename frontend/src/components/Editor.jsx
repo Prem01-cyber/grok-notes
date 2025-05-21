@@ -503,7 +503,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             opacity: showTableControls ? 1 : 0,
             transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
           }}
-          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
+          className="bg-white border border-gray-200 rounded shadow-lg p-2 backdrop-blur-sm flex flex-col"
         >
           <button
             onMouseEnter={() => setHoveredButton(tableControlPosition.type)}
@@ -512,12 +512,9 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               actionFn();
               setShowTableControls(false);
             }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
-            title={actionText}
+            className="text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 rounded px-3 py-1 text-sm font-medium transition-all duration-200"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
+            {isColumn ? 'Add Column' : 'Add Row'}
           </button>
         </div>
         {hoveredButton && (
