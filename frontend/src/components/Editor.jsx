@@ -47,6 +47,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const [title, setTitle] = useState(currentNote?.title || "");
   const [showPrompt, setShowPrompt] = useState(false);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [commandSearch, setCommandSearch] = useState("");
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [showTableControls, setShowTableControls] = useState(false);
   const [showTableContextMenu, setShowTableContextMenu] = useState(false);
   const [tableControlPosition, setTableControlPosition] = useState({ x: 0, y: 0, type: '', xRow: 0, yRow: 0, typeRow: '' });
@@ -147,6 +149,48 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             
             setPromptPosition({ x, y });
             setShowCommandMenu(true);
+            setCommandSearch("");
+            setSelectedCommandIndex(0);
+            event.preventDefault();
+            return true;
+          }
+        }
+        // Handle command menu navigation and input
+        if (showCommandMenu) {
+          if (event.key === 'Enter') {
+            const filteredCommands = getFilteredCommands();
+            if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
+              filteredCommands[selectedCommandIndex].action();
+              setShowCommandMenu(false);
+              event.preventDefault();
+              return true;
+            }
+          } else if (event.key === 'ArrowDown') {
+            const filteredCommands = getFilteredCommands();
+            if (filteredCommands.length > 0) {
+              setSelectedCommandIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
+              event.preventDefault();
+              return true;
+            }
+          } else if (event.key === 'ArrowUp') {
+            setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
+            event.preventDefault();
+            return true;
+          } else if (event.key === 'Escape') {
+            setShowCommandMenu(false);
+            event.preventDefault();
+            return true;
+          } else if (event.key === 'Backspace' && commandSearch === "") {
+            setShowCommandMenu(false);
+            return false; // Allow normal backspace behavior
+          } else if (event.key.length === 1 || event.key === 'Backspace') {
+            // Update search query on typing or backspace
+            if (event.key === 'Backspace') {
+              setCommandSearch((prev) => prev.slice(0, -1));
+            } else {
+              setCommandSearch((prev) => prev + event.key);
+            }
+            setSelectedCommandIndex(0);
             event.preventDefault();
             return true;
           }
@@ -308,6 +352,31 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
+  // Define available commands with categories and actions (Notion-inspired)
+  const commands = [
+    { name: "Heading 1", category: "Formatting", action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z" clipRule="evenodd" /></svg> },
+    { name: "Heading 2", category: "Formatting", action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z" clipRule="evenodd" /></svg> },
+    { name: "Heading 3", category: "Formatting", action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z" clipRule="evenodd" /></svg> },
+    { name: "Bold", category: "Formatting", action: () => editor.chain().focus().toggleBold().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4a1 1 0 011-1h5a4 4 0 012.536 7.096A4 4 0 0111 16v1H6a1 1 0 01-1-1V4zm4 10.5a2 2 0 004-1.372A2 2 0 0011 9V7a2 2 0 00-4 0v2a2 2 0 002 2v1.128a2 2 0 000 1.372z" clipRule="evenodd" /></svg> },
+    { name: "Italic", category: "Formatting", action: () => editor.chain().focus().toggleItalic().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4a1 1 0 011-1h3a1 1 0 010 2H8.251l-.234 1.17a1 1 0 01-1.984-.396l.234-1.169A1 1 0 016.017 5H6a1 1 0 010-2h8a1 1 0 011 1 1 1 0 012 0 3 3 0 01-3 3h-.749l.234 1.169a1 1 0 01-1.984.396l-.234-1.17H11a1 1 0 010-2h1.983a1 1 0 01.986 1.17l-.234 1.169a3 3 0 005.965 1.104l.234-1.169A3 3 0 0018.017 5H18a1 1 0 010-2h-2a1 1 0 00-1 1 1 1 0 00-2 0 3 3 0 00-3-3H6a3 3 0 00-3 3v12a3 3 0 003 3h4a3 3 0 003-3 1 1 0 10-2 0 1 1 0 00-1 1H6a1 1 0 00-1-1V5z" clipRule="evenodd" /></svg> },
+    { name: "Bullet List", category: "Lists", action: () => editor.chain().focus().toggleBulletList().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 6a1 1 0 100-2 1 1 0 000 2zM3 9a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg> },
+    { name: "Numbered List", category: "Lists", action: () => editor.chain().focus().toggleOrderedList().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h1.616a1 1 0 01.986 1.164l-.24 1.208a1 1 0 01-1.974.394l.24-1.208A1 1 0 015.616 5H7v2H4a1 1 0 010-2zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm1 2a1 1 0 010 2h1.616a1 1 0 01.986-1.164l-.24-1.208a1 1 0 011.974-.394l.24 1.208A1 1 0 017.616 15H9v2H4a1 1 0 010-2h3v-2H4z" clipRule="evenodd" /></svg> },
+    { name: "To-Do List", category: "Lists", action: () => editor.chain().focus().toggleTaskList().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm11.293-1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 15H13v-2h3.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg> },
+    { name: "Insert Table", category: "Insert", action: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg> },
+    { name: "Code Block", category: "Insert", action: () => editor.chain().focus().toggleCodeBlock().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm10.293-5.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-2 2a1 1 0 01-1.414-1.414L14.586 15H13v-2h1.586l-1.293-1.293a1 1 0 010-1.414zM6.293 10.293a1 1 0 011.414 0L9 11.586V13h-2v-1.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg> },
+    { name: "Block Quote", category: "Insert", action: () => editor.chain().focus().toggleBlockquote().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4a1 1 0 011-1h8a1 1 0 011 1v3a1 1 0 01-2 0V5H7v2a1 1 0 01-2 0V4zm-1 5a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zm6 3a1 1 0 011-1h3a1 1 0 110 2h-3a1 1 0 01-1-1zm-1.293 2.293a1 1 0 011.414 0L12 15.586V17H8v-1.414l1.707-1.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> },
+    { name: "Divider", category: "Structure", action: () => editor.chain().focus().setHorizontalRule().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg> }
+  ];
+  
+  // Function to get filtered commands based on search input
+  const getFilteredCommands = () => {
+    if (!commandSearch) {
+      return commands; // Return all commands if no search query
+    }
+    const searchLower = commandSearch.toLowerCase();
+    return commands.filter(cmd => cmd.name.toLowerCase().includes(searchLower));
+  };
 
   // Effect: on initial mount or when currentNote changes, load the content if provided
   useEffect(() => {
@@ -848,26 +917,43 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               top: `${promptPosition.y}px`,
               zIndex: 50,
             }}
-            className="bg-white/98 border border-gray-200 rounded-xl shadow-xl p-4 backdrop-blur-md min-w-[240px] max-h-[300px] overflow-y-auto"
+            className="bg-white/98 border border-gray-200 rounded-xl shadow-xl p-4 backdrop-blur-md min-w-[300px] max-h-[400px] overflow-y-auto"
           >
-            <div className="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-1">Quick Commands</div>
-            <ul className="space-y-1">
-              <li>
-                <button
-                  onClick={() => {
-                    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-                    setShowCommandMenu(false);
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm text-gray-800 font-normal transition-colors flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Insert Table
-                </button>
-              </li>
-              {/* Add more command options here */}
-            </ul>
+            <div className="mb-3 border-b border-gray-200 pb-1">
+              <input
+                type="text"
+                className="w-full text-sm p-2 border-none focus:outline-none text-gray-800 font-medium"
+                value={`/${commandSearch}`}
+                onChange={(e) => {
+                  const value = e.target.value.startsWith('/') ? e.target.value.slice(1) : e.target.value;
+                  setCommandSearch(value);
+                  setSelectedCommandIndex(0);
+                }}
+                placeholder="/Type to search commands..."
+                autoFocus
+              />
+            </div>
+            <div className="text-xs font-medium text-gray-500 mb-2">Commands</div>
+            {getFilteredCommands().length > 0 ? (
+              <ul className="space-y-1">
+                {getFilteredCommands().map((cmd, index) => (
+                  <li key={cmd.name}>
+                    <button
+                      onClick={() => {
+                        cmd.action();
+                        setShowCommandMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded text-sm text-gray-800 font-normal transition-colors flex items-center gap-2 ${index === selectedCommandIndex ? 'bg-blue-50' : 'hover:bg-blue-50'}`}
+                    >
+                      {cmd.icon}
+                      {cmd.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-500 italic px-3 py-2">No matching commands found.</div>
+            )}
           </div>
         )}
         {showTableControls && renderTableControls()}
