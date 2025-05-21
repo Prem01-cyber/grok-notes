@@ -787,11 +787,11 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
   return (
     <div className="relative min-h-screen">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4 relative overflow-x-auto">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md border border-gray-300 p-6 mt-3 mb-3 relative overflow-x-auto">
         <div className="flex justify-between items-center mb-4">
           <input
             type="text"
-            className="text-xl font-bold w-full border-b focus:outline-none"
+            className="text-2xl font-semibold w-full border-b border-gray-300 focus:outline-none focus:border-blue-500 transition-colors"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />

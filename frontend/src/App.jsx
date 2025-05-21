@@ -5,17 +5,19 @@ import Sidebar from "./components/Sidebar";
 export default function App() {
   const [selectedNote, setSelectedNote] = useState(null);
   const [notes, setNotes] = useState([]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 flex">
       <Sidebar
         notes={notes}
         setNotes={setNotes}
         selectedId={selectedNote?.id}
         onSelect={(note) => setSelectedNote(note)}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
       />
-      <main className="p-4 ml-64 transition-all duration-300">
-        {/* <h1 className="text-3xl font-bold mb-4">Notes Taker</h1> */}
+      <main className={`flex-1 h-screen overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-64'}`}>
         {selectedNote ? (
           <Editor
             currentNote={selectedNote}
@@ -27,7 +29,7 @@ export default function App() {
             }}
           />
         ) : (
-          <p className="text-gray-600">Select a note to begin editing.</p>
+          <p className="text-gray-600 p-4">Select a note to begin editing.</p>
         )}
       </main>
     </div>

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAllNotes, saveNote, deleteNote } from "../api";
 
-export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export default function Sidebar({ onSelect, selectedId, notes, setNotes, isCollapsed, setIsCollapsed }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -61,13 +60,13 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes }) {
 
   return (
     <div className="relative">
-      <div className={`fixed top-0 left-0 h-screen bg-white border-r transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'}`}>
+      <div className={`fixed top-0 left-0 h-screen bg-white border-r transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="h-full flex flex-col">
           {/* Toggle Button */}
           <div className="relative">
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="absolute -right-3 top-4 bg-white border rounded-full p-1 shadow-md hover:bg-gray-50 transition-colors z-50"
+              onClick={() => setIsCollapsed(prev => !prev)}
+              className="absolute -right-3 top-4 bg-white border rounded-full p-1 shadow-sm hover:bg-gray-50 transition-colors z-50"
             >
               <svg
                 className={`w-4 h-4 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}

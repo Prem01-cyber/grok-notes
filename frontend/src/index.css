@@ -134,7 +134,7 @@ body {
   white-space: pre-wrap;
   font-family: 'JetBrains Mono', monospace;
   margin: 1.5rem 0;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.05);
 }
 
 .tiptap pre code {
@@ -203,7 +203,7 @@ body {
   margin: 1.5rem 0;
   border-radius: 0.75rem;
   font-style: normal;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
 
 /* --- Selection style --- */
