@@ -450,18 +450,24 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             left: `${tableControlPosition.x}px`,
             top: `${tableControlPosition.y}px`,
             zIndex: 50,
+            transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
+            opacity: showTableControls ? 1 : 0,
+            transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
           }}
-          className="bg-white border border-gray-200 rounded-full shadow-lg p-1 backdrop-blur-sm"
+          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm"
         >
           <button
             onClick={() => {
-              editor.chain().focus().addColumnAfter().run();
-              setShowTableControls(false);
+              console.log('Add Column After button clicked');
+              if (editor) {
+                editor.chain().focus().addColumnAfter().run();
+                setShowTableControls(false);
+              }
             }}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
             title="Add Column After"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
           </button>
@@ -473,19 +479,25 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             left: `${tableControlPosition.xRow}px`,
             top: `${tableControlPosition.yRow}px`,
             zIndex: 50,
+            transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
+            opacity: showTableControls ? 1 : 0,
+            transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
           }}
-          className="bg-white border border-gray-200 rounded-full shadow-lg p-1 backdrop-blur-sm"
+          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm"
         >
           <button
             onClick={() => {
-              editor.chain().focus().addRowAfter().run();
-              setShowTableControls(false);
+              console.log('Add Row After button clicked');
+              if (editor) {
+                editor.chain().focus().addRowAfter().run();
+                setShowTableControls(false);
+              }
             }}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
             title="Add Row After"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 10a1 1 0 011-1h5v-5a1 1 0 112 0v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
           </button>
         </div>
