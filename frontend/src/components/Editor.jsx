@@ -54,6 +54,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
   const [saveStatus, setSaveStatus] = useState({ status: 'idle', error: null });
   const [streamStatus, setStreamStatus] = useState({ isStreaming: false, progress: 0 });
+  const [hoveredButton, setHoveredButton] = useState(null);
+  const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const commandMenuRef = useRef(null);
@@ -64,6 +66,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const saveTimeoutRef = useRef(null);
   const selectionRef = useRef(null);
   const editorInstanceRef = useRef(null);
+  const currentCellRef = useRef(null);
 
   // Initialize TipTap editor with desired extensions and content
   const editor = useEditor({
@@ -163,11 +166,18 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     const handleMouseOver = (event) => {
       const target = event.target;
       if (target.tagName === 'TD' || target.tagName === 'TH') {
+        currentCellRef.current = target;
         const rect = target.getBoundingClientRect();
         const editorRect = editorElement.getBoundingClientRect();
         const x = rect.right - editorRect.left + 5;
         const y = rect.top - editorRect.top + rect.height / 2;
         setTableControlPosition({ x, y, type: 'column', xRow: rect.left - editorRect.left - 15, yRow: rect.top - editorRect.top + rect.height / 2, typeRow: 'row' });
+        setPreviewPosition({
+          x: rect.left - editorRect.left,
+          y: rect.top - editorRect.top,
+          width: rect.width,
+          height: rect.height
+        });
         setShowTableControls(true);
         if (timeoutId) clearTimeout(timeoutId);
       }
@@ -178,6 +188,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       if (target.tagName === 'TD' || target.tagName === 'TH') {
         timeoutId = setTimeout(() => {
           setShowTableControls(false);
+          setHoveredButton(null);
         }, 500);
       }
     };
@@ -457,6 +468,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
           className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
         >
           <button
+            onMouseEnter={() => setHoveredButton('columnAfter')}
+            onMouseLeave={() => setHoveredButton(null)}
             onClick={() => {
               console.log('Add Column After button clicked');
               if (editor) {
@@ -472,6 +485,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             </svg>
           </button>
           <button
+            onMouseEnter={() => setHoveredButton('columnBefore')}
+            onMouseLeave={() => setHoveredButton(null)}
             onClick={() => {
               console.log('Add Column Before button clicked');
               if (editor) {
@@ -501,6 +516,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
           className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
         >
           <button
+            onMouseEnter={() => setHoveredButton('rowAfter')}
+            onMouseLeave={() => setHoveredButton(null)}
             onClick={() => {
               console.log('Add Row After button clicked');
               if (editor) {
@@ -516,6 +533,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             </svg>
           </button>
           <button
+            onMouseEnter={() => setHoveredButton('rowBefore')}
+            onMouseLeave={() => setHoveredButton(null)}
             onClick={() => {
               console.log('Add Row Before button clicked');
               if (editor) {
@@ -531,6 +550,21 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             </svg>
           </button>
         </div>
+        {hoveredButton && (
+          <div
+            style={{
+              position: 'absolute',
+              left: hoveredButton === 'columnAfter' ? `${previewPosition.x + previewPosition.width}px` : hoveredButton === 'columnBefore' ? `${previewPosition.x}px` : `${previewPosition.x}px`,
+              top: hoveredButton === 'rowAfter' ? `${previewPosition.y + previewPosition.height}px` : hoveredButton === 'rowBefore' ? `${previewPosition.y}px` : `${previewPosition.y}px`,
+              width: hoveredButton.includes('column') ? '2px' : `${previewPosition.width}px`,
+              height: hoveredButton.includes('row') ? '2px' : `${previewPosition.height}px`,
+              backgroundColor: 'rgba(59, 130, 246, 0.5)', // Blue with transparency
+              zIndex: 40,
+              transition: 'opacity 0.2s ease-in-out',
+              opacity: showTableControls ? 1 : 0,
+            }}
+          />
+        )}
       </>
     );
   };
