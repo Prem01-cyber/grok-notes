@@ -890,7 +890,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               top: `${promptPosition.y}px`,
               zIndex: 50,
             }}
-            className="bg-white/98 border border-gray-200 rounded-xl shadow-xl p-4 backdrop-blur-md min-w-[300px] max-h-[400px] overflow-y-auto"
+            className="bg-white/98 border border-gray-200 rounded-lg shadow-lg p-3 backdrop-blur-md min-w-[250px] max-h-[350px] overflow-y-auto transition-all duration-200"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 const filteredCommands = getFilteredCommands();
@@ -922,23 +922,23 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               }
             }}
           >
-            <div className="mb-3 border-b border-gray-200 pb-1">
+            <div className="mb-2 border-b border-gray-200 pb-1">
               <input
                 type="text"
-                className="w-full text-sm p-2 border-none focus:outline-none text-gray-800 font-medium"
+                className="w-full text-sm p-1 border-none focus:outline-none text-gray-800 font-medium"
                 value={`/${commandSearch}`}
                 onChange={(e) => {
                   const value = e.target.value.startsWith('/') ? e.target.value.slice(1) : e.target.value;
                   setCommandSearch(value);
                   setSelectedCommandIndex(0);
                 }}
-                placeholder="/Type to search commands..."
+                placeholder="/Search commands..."
                 autoFocus
               />
             </div>
-            <div className="text-xs font-medium text-gray-500 mb-2">Commands</div>
+            <div className="text-xs font-medium text-gray-500 mb-1">Commands</div>
             {getFilteredCommands().length > 0 ? (
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {getFilteredCommands().map((cmd, index) => (
                   <li key={cmd.name}>
                     <button
@@ -946,7 +946,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
                         cmd.action();
                         setShowCommandMenu(false);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded text-sm text-gray-800 font-normal transition-colors flex items-center gap-2 ${index === selectedCommandIndex ? 'bg-blue-50' : 'hover:bg-blue-50'}`}
+                      className={`w-full text-left px-2 py-1.5 rounded text-sm text-gray-800 font-normal transition-colors flex items-center gap-1.5 ${index === selectedCommandIndex ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-50'}`}
                     >
                       {cmd.icon}
                       {cmd.name}
@@ -955,7 +955,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
                 ))}
               </ul>
             ) : (
-              <div className="text-sm text-gray-500 italic px-3 py-2">No matching commands found.</div>
+              <div className="text-sm text-gray-500 italic px-2 py-1.5">No matches found.</div>
             )}
           </div>
         )}
