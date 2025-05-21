@@ -6,7 +6,6 @@ import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import Bold from "@tiptap/extension-bold";
 import { Table } from "../extensions/Table";
-import TableToolbar from "./TableToolbar";
 // If needed, import other extensions (like Link, Image, Underline) if their nodes/marks are used.
 import { unified } from "unified";
 import remarkParse from "remark-parse";
@@ -47,11 +46,13 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const [promptInput, setPromptInput] = useState("");
   const [title, setTitle] = useState(currentNote?.title || "");
   const [showPrompt, setShowPrompt] = useState(false);
+  const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
   const [saveStatus, setSaveStatus] = useState({ status: 'idle', error: null });
   const [streamStatus, setStreamStatus] = useState({ isStreaming: false, progress: 0 });
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
+  const commandMenuRef = useRef(null);
   const editorRef = useRef(null);
   const streamBufferRef = useRef("");
   const saveTimeoutRef = useRef(null);
@@ -98,7 +99,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       },
       handleKeyDown: (view, event) => {
         // Check if space is pressed at the start of a node
-        if (event.key === ' ' && !showPrompt) {
+        if (event.key === ' ' && !showPrompt && !showCommandMenu) {
           const { state } = view;
           const { selection } = state;
           const { $from } = selection;
@@ -115,6 +116,28 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             
             setPromptPosition({ x, y });
             setShowPrompt(true);
+            event.preventDefault();
+            return true;
+          }
+        }
+        // Check if '/' is pressed at the start of a node
+        if (event.key === '/' && !showPrompt && !showCommandMenu) {
+          const { state } = view;
+          const { selection } = state;
+          const { $from } = selection;
+          
+          // Check if we're at the start of a node
+          if ($from.parentOffset === 0) {
+            const coords = view.coordsAtPos(selection.from);
+            const editorElement = editorRef.current;
+            const editorRect = editorElement.getBoundingClientRect();
+            
+            // Calculate position relative to the editor container
+            const x = coords.left - editorRect.left;
+            const y = coords.top - editorRect.top;
+            
+            setPromptPosition({ x, y });
+            setShowCommandMenu(true);
             event.preventDefault();
             return true;
           }
@@ -167,11 +190,14 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     }, 1000); // 1 second debounce
   }, [currentNote, title, onSave]);
 
-  // Close prompt when clicking outside
+  // Close prompt and command menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (promptRef.current && !promptRef.current.contains(event.target)) {
         setShowPrompt(false);
+      }
+      if (commandMenuRef.current && !commandMenuRef.current.contains(event.target)) {
+        setShowCommandMenu(false);
       }
     };
 
@@ -221,9 +247,9 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     return () => editor.off("update", handler);
   }, [editor, currentNote, title]);
 
-  // Update prompt position on scroll
+  // Update prompt and command menu position on scroll
   useEffect(() => {
-    if (!showPrompt || !editor || !editorRef.current) return;
+    if ((!showPrompt && !showCommandMenu) || !editor || !editorRef.current) return;
 
     const updatePosition = () => {
       const { state } = editor;
@@ -241,7 +267,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
     window.addEventListener('scroll', updatePosition, true);
     return () => window.removeEventListener('scroll', updatePosition, true);
-  }, [showPrompt, editor]);
+  }, [showPrompt, showCommandMenu, editor]);
 
   // Cleanup save timeout on unmount
   useEffect(() => {
@@ -441,7 +467,6 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             )}
           </div>
         </div>
-        <TableToolbar editor={editor} />
         <EditorContent editor={editor} ref={editorRef} />
         
         {/* Add streaming progress indicator */}
@@ -504,6 +529,34 @@ const Editor = ({ currentNote, onSave, ...props }) => {
                 "Ask"
               )}
             </button>
+          </div>
+        )}
+        {showCommandMenu && (
+          <div
+            ref={commandMenuRef}
+            style={{
+              position: 'absolute',
+              left: `${promptPosition.x}px`,
+              top: `${promptPosition.y}px`,
+              zIndex: 50,
+            }}
+            className="bg-white/95 border border-gray-200 rounded-xl shadow-lg p-3 backdrop-blur-sm min-w-[200px]"
+          >
+            <div className="text-sm text-gray-700 mb-2">Commands</div>
+            <ul className="space-y-1">
+              <li>
+                <button
+                  onClick={() => {
+                    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+                    setShowCommandMenu(false);
+                  }}
+                  className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+                >
+                  Insert Table
+                </button>
+              </li>
+              {/* Add more command options here */}
+            </ul>
           </div>
         )}
       </div>
