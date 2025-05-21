@@ -169,17 +169,51 @@ const Editor = ({ currentNote, onSave, ...props }) => {
         currentCellRef.current = target;
         const rect = target.getBoundingClientRect();
         const editorRect = editorElement.getBoundingClientRect();
-        const x = rect.right - editorRect.left + 5;
-        const y = rect.top - editorRect.top + rect.height / 2;
-        setTableControlPosition({ x, y, type: 'column', xRow: rect.left - editorRect.left - 15, yRow: rect.top - editorRect.top + rect.height / 2, typeRow: 'row' });
-        setPreviewPosition({
-          x: rect.left - editorRect.left,
-          y: rect.top - editorRect.top,
-          width: rect.width,
-          height: rect.height
-        });
-        setShowTableControls(true);
-        if (timeoutId) clearTimeout(timeoutId);
+        const mouseX = event.clientX;
+        const mouseY = event.clientY;
+        const borderThreshold = 5; // Pixels near border to trigger hover
+        
+        // Calculate positions relative to editor
+        const cellLeft = rect.left - editorRect.left;
+        const cellRight = rect.right - editorRect.left;
+        const cellTop = rect.top - editorRect.top;
+        const cellBottom = rect.bottom - editorRect.top;
+        const mouseRelX = mouseX - editorRect.left;
+        const mouseRelY = mouseY - editorRect.top;
+
+        // Determine if mouse is near a border
+        let borderType = '';
+        let x = 0, y = 0;
+        if (mouseX >= rect.right - borderThreshold) {
+          borderType = 'right';
+          x = cellRight + 5;
+          y = cellTop + rect.height / 2;
+        } else if (mouseX <= rect.left + borderThreshold) {
+          borderType = 'left';
+          x = cellLeft - 15;
+          y = cellTop + rect.height / 2;
+        } else if (mouseY >= rect.bottom - borderThreshold) {
+          borderType = 'bottom';
+          x = cellLeft + rect.width / 2;
+          y = cellBottom + 5;
+        } else if (mouseY <= rect.top + borderThreshold) {
+          borderType = 'top';
+          x = cellLeft + rect.width / 2;
+          y = cellTop - 15;
+        }
+
+        if (borderType) {
+          setTableControlPosition({ x, y, type: borderType });
+          setPreviewPosition({
+            x: cellLeft,
+            y: cellTop,
+            width: rect.width,
+            height: rect.height,
+            border: borderType
+          });
+          setShowTableControls(true);
+          if (timeoutId) clearTimeout(timeoutId);
+        }
       }
     };
 
@@ -452,6 +486,10 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   };
 
   const renderTableControls = () => {
+    const isColumn = tableControlPosition.type === 'right' || tableControlPosition.type === 'left';
+    const actionText = isColumn ? (tableControlPosition.type === 'right' ? 'Add Column After' : 'Add Column Before') : (tableControlPosition.type === 'bottom' ? 'Add Row After' : 'Add Row Before');
+    const actionFn = isColumn ? (tableControlPosition.type === 'right' ? () => editor.chain().focus().addColumnAfter().run() : () => editor.chain().focus().addColumnBefore().run()) : (tableControlPosition.type === 'bottom' ? () => editor.chain().focus().addRowAfter().run() : () => editor.chain().focus().addRowBefore().run());
+
     return (
       <>
         <div
@@ -468,85 +506,17 @@ const Editor = ({ currentNote, onSave, ...props }) => {
           className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
         >
           <button
-            onMouseEnter={() => setHoveredButton('columnAfter')}
+            onMouseEnter={() => setHoveredButton(tableControlPosition.type)}
             onMouseLeave={() => setHoveredButton(null)}
             onClick={() => {
-              console.log('Add Column After button clicked');
-              if (editor) {
-                editor.chain().focus().addColumnAfter().run();
-                setShowTableControls(false);
-              }
+              actionFn();
+              setShowTableControls(false);
             }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110 mb-1"
-            title="Add Column After"
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
+            title={actionText}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <button
-            onMouseEnter={() => setHoveredButton('columnBefore')}
-            onMouseLeave={() => setHoveredButton(null)}
-            onClick={() => {
-              console.log('Add Column Before button clicked');
-              if (editor) {
-                editor.chain().focus().addColumnBefore().run();
-                setShowTableControls(false);
-              }
-            }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
-            title="Add Column Before"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-        <div
-          ref={tableControlsRef}
-          style={{
-            position: 'absolute',
-            left: `${tableControlPosition.xRow}px`,
-            top: `${tableControlPosition.yRow}px`,
-            zIndex: 50,
-            transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
-            opacity: showTableControls ? 1 : 0,
-            transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
-          }}
-          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
-        >
-          <button
-            onMouseEnter={() => setHoveredButton('rowAfter')}
-            onMouseLeave={() => setHoveredButton(null)}
-            onClick={() => {
-              console.log('Add Row After button clicked');
-              if (editor) {
-                editor.chain().focus().addRowAfter().run();
-                setShowTableControls(false);
-              }
-            }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110 mb-1"
-            title="Add Row After"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 10a1 1 0 011-1h5v-5a1 1 0 112 0v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-          <button
-            onMouseEnter={() => setHoveredButton('rowBefore')}
-            onMouseLeave={() => setHoveredButton(null)}
-            onClick={() => {
-              console.log('Add Row Before button clicked');
-              if (editor) {
-                editor.chain().focus().addRowBefore().run();
-                setShowTableControls(false);
-              }
-            }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
-            title="Add Row Before"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M3 10a1 1 0 011-1h5v-5a1 1 0 112 0v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
           </button>
         </div>
@@ -554,10 +524,10 @@ const Editor = ({ currentNote, onSave, ...props }) => {
           <div
             style={{
               position: 'absolute',
-              left: hoveredButton === 'columnAfter' ? `${previewPosition.x + previewPosition.width}px` : hoveredButton === 'columnBefore' ? `${previewPosition.x}px` : `${previewPosition.x}px`,
-              top: hoveredButton === 'rowAfter' ? `${previewPosition.y + previewPosition.height}px` : hoveredButton === 'rowBefore' ? `${previewPosition.y}px` : `${previewPosition.y}px`,
-              width: hoveredButton.includes('column') ? '2px' : `${previewPosition.width}px`,
-              height: hoveredButton.includes('row') ? '2px' : `${previewPosition.height}px`,
+              left: hoveredButton === 'right' ? `${previewPosition.x + previewPosition.width}px` : hoveredButton === 'left' ? `${previewPosition.x}px` : `${previewPosition.x}px`,
+              top: hoveredButton === 'bottom' ? `${previewPosition.y + previewPosition.height}px` : hoveredButton === 'top' ? `${previewPosition.y}px` : `${previewPosition.y}px`,
+              width: hoveredButton === 'right' || hoveredButton === 'left' ? '2px' : `${previewPosition.width}px`,
+              height: hoveredButton === 'bottom' || hoveredButton === 'top' ? '2px' : `${previewPosition.height}px`,
               backgroundColor: 'rgba(59, 130, 246, 0.5)', // Blue with transparency
               zIndex: 40,
               transition: 'opacity 0.2s ease-in-out',
