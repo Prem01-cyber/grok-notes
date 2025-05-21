@@ -454,7 +454,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             opacity: showTableControls ? 1 : 0,
             transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
           }}
-          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm"
+          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
         >
           <button
             onClick={() => {
@@ -464,8 +464,23 @@ const Editor = ({ currentNote, onSave, ...props }) => {
                 setShowTableControls(false);
               }
             }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110 mb-1"
             title="Add Column After"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              console.log('Add Column Before button clicked');
+              if (editor) {
+                editor.chain().focus().addColumnBefore().run();
+                setShowTableControls(false);
+              }
+            }}
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
+            title="Add Column Before"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -483,7 +498,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             opacity: showTableControls ? 1 : 0,
             transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
           }}
-          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm"
+          className="bg-white border border-gray-200 rounded shadow-lg p-1 backdrop-blur-sm flex flex-col"
         >
           <button
             onClick={() => {
@@ -493,8 +508,23 @@ const Editor = ({ currentNote, onSave, ...props }) => {
                 setShowTableControls(false);
               }
             }}
-            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110 mb-1"
             title="Add Row After"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 10a1 1 0 011-1h5v-5a1 1 0 112 0v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              console.log('Add Row Before button clicked');
+              if (editor) {
+                editor.chain().focus().addRowBefore().run();
+                setShowTableControls(false);
+              }
+            }}
+            className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded p-1 transform transition-all duration-200 hover:scale-110"
+            title="Add Row Before"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 10a1 1 0 011-1h5v-5a1 1 0 112 0v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 01-1-1z" clipRule="evenodd" />
@@ -714,7 +744,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
   return (
     <div className="relative min-h-screen">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4 relative">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow border p-4 mt-4 relative overflow-x-auto">
         <div className="flex justify-between items-center mb-4">
           <input
             type="text"
@@ -742,7 +772,9 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             )}
           </div>
         </div>
-        <EditorContent editor={editor} ref={editorRef} />
+        <div className="w-full overflow-x-auto">
+          <EditorContent editor={editor} ref={editorRef} className="w-full" />
+        </div>
         
         {/* Add streaming progress indicator */}
         {streamStatus.isStreaming && (
