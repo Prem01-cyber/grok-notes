@@ -30,8 +30,9 @@ body.dark {
 }
 
 body.dark .tiptap {
-  color: #e2e8f0;
+  color: #f1f5f9;
   background-color: #1e1e1e;
+  caret-color: #f1f5f9; /* Ensure cursor is visible in dark mode */
 }
 
 /* Placeholder */
@@ -249,6 +250,11 @@ body.dark .tiptap p {
 .tiptap ::selection {
   background-color: #dbeafe;
   color: #1e40af;
+}
+
+body.dark .tiptap ::selection {
+  background-color: #3b82f6;
+  color: #ffffff;
 }
 
 /* --- Focus styles --- */

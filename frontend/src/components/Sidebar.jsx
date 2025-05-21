@@ -66,7 +66,7 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
             <div className="relative">
               <button
                 onClick={() => setIsCollapsed(prev => !prev)}
-                className={`absolute -right-3 top-4 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 hover:bg-gray-700' : 'bg-white border rounded-full'} p-1 shadow-sm hover:bg-gray-50 transition-colors z-50`}
+                className={`absolute -right-3 top-4 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-white' : 'bg-white border-gray-300 rounded-full hover:bg-gray-50 text-gray-800'} p-1 shadow-sm transition-colors z-50`}
               >
                 <svg
                   className={`w-4 h-4 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
@@ -101,10 +101,10 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className={`text-lg font-bold flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
-                      <span className="text-blue-600">📝</span>
+                      <span className={`${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>📝</span>
                       Notes
                     </h2>
-                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{notes.length}</span>
+                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{notes.length}</span>
                   </div>
 
                   {/* Search Bar */}
@@ -158,8 +158,8 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                     ) : (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-gray-400">📝</span>
-                          <span className="truncate">{note.title || `Note ${note.id}`}</span>
+                          <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-400'}`}>📝</span>
+                          <span className={`truncate ${theme === 'dark' && selectedId !== note.id ? 'text-gray-200' : ''}`}>{note.title || `Note ${note.id}`}</span>
                         </div>
                         <button
                           onClick={(e) => handleDeleteNote(note.id, e)}

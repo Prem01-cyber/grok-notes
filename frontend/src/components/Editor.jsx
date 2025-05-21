@@ -882,82 +882,82 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           </div>
         )}
         {showCommandMenu && (
-          <div
-            ref={commandMenuRef}
-            style={{
-              position: 'absolute',
-              left: `${promptPosition.x}px`,
-              top: `${promptPosition.y}px`,
-              zIndex: 50,
-            }}
-            className="bg-white/98 border border-gray-200 rounded-lg shadow-lg p-3 backdrop-blur-md min-w-[250px] max-h-[350px] overflow-y-auto transition-all duration-200"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                const filteredCommands = getFilteredCommands();
-                if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
-                  filteredCommands[selectedCommandIndex].action();
+            <div
+              ref={commandMenuRef}
+              style={{
+                position: 'absolute',
+                left: `${promptPosition.x}px`,
+                top: `${promptPosition.y}px`,
+                zIndex: 50,
+              }}
+              className={`border rounded-lg shadow-lg p-3 backdrop-blur-md min-w-[250px] max-h-[350px] overflow-y-auto transition-all duration-200 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white/98 border-gray-200'}`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const filteredCommands = getFilteredCommands();
+                  if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
+                    filteredCommands[selectedCommandIndex].action();
+                    setShowCommandMenu(false);
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                } else if (e.key === 'ArrowDown') {
+                  const filteredCommands = getFilteredCommands();
+                  if (filteredCommands.length > 0) {
+                    setSelectedCommandIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                } else if (e.key === 'ArrowUp') {
+                  setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
+                  e.preventDefault();
+                  e.stopPropagation();
+                } else if (e.key === 'Escape') {
+                  setShowCommandMenu(false);
+                  e.preventDefault();
+                  e.stopPropagation();
+                } else if (e.key === 'Backspace' && commandSearch === "") {
                   setShowCommandMenu(false);
                   e.preventDefault();
                   e.stopPropagation();
                 }
-              } else if (e.key === 'ArrowDown') {
-                const filteredCommands = getFilteredCommands();
-                if (filteredCommands.length > 0) {
-                  setSelectedCommandIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
-                  e.preventDefault();
-                  e.stopPropagation();
-                }
-              } else if (e.key === 'ArrowUp') {
-                setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
-                e.preventDefault();
-                e.stopPropagation();
-              } else if (e.key === 'Escape') {
-                setShowCommandMenu(false);
-                e.preventDefault();
-                e.stopPropagation();
-              } else if (e.key === 'Backspace' && commandSearch === "") {
-                setShowCommandMenu(false);
-                e.preventDefault();
-                e.stopPropagation();
-              }
-            }}
-          >
-            <div className="mb-2 border-b border-gray-200 pb-1">
-              <input
-                type="text"
-                className="w-full text-sm p-1 border-none focus:outline-none text-gray-800 font-medium"
-                value={`/${commandSearch}`}
-                onChange={(e) => {
-                  const value = e.target.value.startsWith('/') ? e.target.value.slice(1) : e.target.value;
-                  setCommandSearch(value);
-                  setSelectedCommandIndex(0);
-                }}
-                placeholder="/Search commands..."
-                autoFocus
-              />
+              }}
+            >
+              <div className={`mb-2 border-b pb-1 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+                <input
+                  type="text"
+                  className={`w-full text-sm p-1 border-none focus:outline-none font-medium ${theme === 'dark' ? 'text-white bg-gray-800' : 'text-gray-800 bg-white'}`}
+                  value={`/${commandSearch}`}
+                  onChange={(e) => {
+                    const value = e.target.value.startsWith('/') ? e.target.value.slice(1) : e.target.value;
+                    setCommandSearch(value);
+                    setSelectedCommandIndex(0);
+                  }}
+                  placeholder="/Search commands..."
+                  autoFocus
+                />
+              </div>
+              <div className={`text-xs font-medium mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Commands</div>
+              {getFilteredCommands().length > 0 ? (
+                <ul className="space-y-0.5">
+                  {getFilteredCommands().map((cmd, index) => (
+                    <li key={cmd.name}>
+                      <button
+                        onClick={() => {
+                          cmd.action();
+                          setShowCommandMenu(false);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded text-sm font-normal transition-colors flex items-center gap-1.5 ${theme === 'dark' ? index === selectedCommandIndex ? 'bg-blue-900 text-blue-300' : 'hover:bg-blue-700 text-white' : index === selectedCommandIndex ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-50 text-gray-800'}`}
+                      >
+                        {cmd.icon}
+                        {cmd.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className={`text-sm italic px-2 py-1.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No matches found.</div>
+              )}
             </div>
-            <div className="text-xs font-medium text-gray-500 mb-1">Commands</div>
-            {getFilteredCommands().length > 0 ? (
-              <ul className="space-y-0.5">
-                {getFilteredCommands().map((cmd, index) => (
-                  <li key={cmd.name}>
-                    <button
-                      onClick={() => {
-                        cmd.action();
-                        setShowCommandMenu(false);
-                      }}
-                      className={`w-full text-left px-2 py-1.5 rounded text-sm text-gray-800 font-normal transition-colors flex items-center gap-1.5 ${index === selectedCommandIndex ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-50'}`}
-                    >
-                      {cmd.icon}
-                      {cmd.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-sm text-gray-500 italic px-2 py-1.5">No matches found.</div>
-            )}
-          </div>
         )}
         {showTableControls && renderTableControls()}
         {showTableContextMenu && renderTableContextMenu()}
