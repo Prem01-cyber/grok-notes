@@ -50,6 +50,11 @@ body.dark .tiptap {
   margin: 2rem 0 1rem;
   color: #111827;
   letter-spacing: -0.025em;
+  transition: color 0.3s ease;
+}
+
+body.dark .tiptap h1 {
+  color: #f3f4f6;
 }
 
 .tiptap h2 {
@@ -58,6 +63,11 @@ body.dark .tiptap {
   margin: 1.75rem 0 1rem;
   color: #1f2937;
   letter-spacing: -0.025em;
+  transition: color 0.3s ease;
+}
+
+body.dark .tiptap h2 {
+  color: #e5e7eb;
 }
 
 .tiptap h3 {
@@ -65,6 +75,11 @@ body.dark .tiptap {
   font-weight: 600;
   margin: 1.5rem 0 0.75rem;
   color: #374151;
+  transition: color 0.3s ease;
+}
+
+body.dark .tiptap h3 {
+  color: #d1d5db;
 }
 
 .tiptap h4,
@@ -74,12 +89,24 @@ body.dark .tiptap {
   font-weight: 600;
   margin: 1.25rem 0 0.75rem;
   color: #4b5563;
+  transition: color 0.3s ease;
+}
+
+body.dark .tiptap h4,
+body.dark .tiptap h5,
+body.dark .tiptap h6 {
+  color: #9ca3af;
 }
 
 /* Paragraph */
 .tiptap p {
   margin: 1rem 0;
   line-height: 1.75;
+  transition: color 0.3s ease;
+}
+
+body.dark .tiptap p {
+  color: #d1d5db;
 }
 
 /* --- Enhanced List Support --- */
