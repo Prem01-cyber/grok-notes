@@ -5,6 +5,8 @@ import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import Bold from "@tiptap/extension-bold";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { Table } from "../extensions/Table";
 // If needed, import other extensions (like Link, Image, Underline) if their nodes/marks are used.
 import { unified } from "unified";
@@ -89,6 +91,10 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       Highlight,
       Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
       Table,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
     ],
     content: currentNote?.content_json ? JSON.parse(currentNote.content_json) : "",
     onUpdate: ({ editor, transaction }) => {
@@ -152,46 +158,13 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             setCommandSearch("");
             setSelectedCommandIndex(0);
             event.preventDefault();
-            return true;
-          }
-        }
-        // Handle command menu navigation and input
-        if (showCommandMenu) {
-          if (event.key === 'Enter') {
-            const filteredCommands = getFilteredCommands();
-            if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
-              filteredCommands[selectedCommandIndex].action();
-              setShowCommandMenu(false);
-              event.preventDefault();
-              return true;
-            }
-          } else if (event.key === 'ArrowDown') {
-            const filteredCommands = getFilteredCommands();
-            if (filteredCommands.length > 0) {
-              setSelectedCommandIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
-              event.preventDefault();
-              return true;
-            }
-          } else if (event.key === 'ArrowUp') {
-            setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
-            event.preventDefault();
-            return true;
-          } else if (event.key === 'Escape') {
-            setShowCommandMenu(false);
-            event.preventDefault();
-            return true;
-          } else if (event.key === 'Backspace' && commandSearch === "") {
-            setShowCommandMenu(false);
-            return false; // Allow normal backspace behavior
-          } else if (event.key.length === 1 || event.key === 'Backspace') {
-            // Update search query on typing or backspace
-            if (event.key === 'Backspace') {
-              setCommandSearch((prev) => prev.slice(0, -1));
-            } else {
-              setCommandSearch((prev) => prev + event.key);
-            }
-            setSelectedCommandIndex(0);
-            event.preventDefault();
+            // Ensure focus remains on the command menu input
+            setTimeout(() => {
+              if (commandMenuRef.current) {
+                const input = commandMenuRef.current.querySelector('input');
+                if (input) input.focus();
+              }
+            }, 0);
             return true;
           }
         }
@@ -918,6 +891,36 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               zIndex: 50,
             }}
             className="bg-white/98 border border-gray-200 rounded-xl shadow-xl p-4 backdrop-blur-md min-w-[300px] max-h-[400px] overflow-y-auto"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const filteredCommands = getFilteredCommands();
+                if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
+                  filteredCommands[selectedCommandIndex].action();
+                  setShowCommandMenu(false);
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              } else if (e.key === 'ArrowDown') {
+                const filteredCommands = getFilteredCommands();
+                if (filteredCommands.length > 0) {
+                  setSelectedCommandIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              } else if (e.key === 'ArrowUp') {
+                setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
+                e.preventDefault();
+                e.stopPropagation();
+              } else if (e.key === 'Escape') {
+                setShowCommandMenu(false);
+                e.preventDefault();
+                e.stopPropagation();
+              } else if (e.key === 'Backspace' && commandSearch === "") {
+                setShowCommandMenu(false);
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
           >
             <div className="mb-3 border-b border-gray-200 pb-1">
               <input
