@@ -71,6 +71,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             class: 'rounded-md bg-gray-800 p-5 font-mono text-sm text-gray-100',
           },
         },
+        table: false,
       }),
       Typography,
       Highlight,

@@ -5,7 +5,7 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
 
 export const Table = Extension.create({
-  name: 'table',
+  name: 'customTable',
 
   addExtensions() {
     return [
