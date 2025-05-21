@@ -47,12 +47,18 @@ const Editor = ({ currentNote, onSave, ...props }) => {
   const [title, setTitle] = useState(currentNote?.title || "");
   const [showPrompt, setShowPrompt] = useState(false);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [showTableControls, setShowTableControls] = useState(false);
+  const [showTableContextMenu, setShowTableContextMenu] = useState(false);
+  const [tableControlPosition, setTableControlPosition] = useState({ x: 0, y: 0, type: '', xRow: 0, yRow: 0, typeRow: '' });
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
   const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
   const [saveStatus, setSaveStatus] = useState({ status: 'idle', error: null });
   const [streamStatus, setStreamStatus] = useState({ isStreaming: false, progress: 0 });
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const commandMenuRef = useRef(null);
+  const tableControlsRef = useRef(null);
+  const tableContextMenuRef = useRef(null);
   const editorRef = useRef(null);
   const streamBufferRef = useRef("");
   const saveTimeoutRef = useRef(null);
@@ -147,9 +153,56 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     },
   });
 
-  // Store editor instance in ref
+  // Store editor instance in ref and add hover event listeners for tables
   useEffect(() => {
     editorInstanceRef.current = editor;
+    if (!editor || !editorRef.current) return;
+
+    const editorElement = editorRef.current;
+    let timeoutId = null;
+    const handleMouseOver = (event) => {
+      const target = event.target;
+      if (target.tagName === 'TD' || target.tagName === 'TH') {
+        const rect = target.getBoundingClientRect();
+        const editorRect = editorElement.getBoundingClientRect();
+        const x = rect.right - editorRect.left + 5;
+        const y = rect.top - editorRect.top + rect.height / 2;
+        setTableControlPosition({ x, y, type: 'column', xRow: rect.left - editorRect.left - 15, yRow: rect.top - editorRect.top + rect.height / 2, typeRow: 'row' });
+        setShowTableControls(true);
+        if (timeoutId) clearTimeout(timeoutId);
+      }
+    };
+
+    const handleMouseOut = (event) => {
+      const target = event.target;
+      if (target.tagName === 'TD' || target.tagName === 'TH') {
+        timeoutId = setTimeout(() => {
+          setShowTableControls(false);
+        }, 500);
+      }
+    };
+
+    const handleContextMenu = (event) => {
+      const target = event.target;
+      if (target.tagName === 'TD' || target.tagName === 'TH') {
+        event.preventDefault();
+        const editorRect = editorElement.getBoundingClientRect();
+        const x = event.clientX - editorRect.left;
+        const y = event.clientY - editorRect.top;
+        setContextMenuPosition({ x, y });
+        setShowTableContextMenu(true);
+      }
+    };
+
+    editorElement.addEventListener('mouseover', handleMouseOver);
+    editorElement.addEventListener('mouseout', handleMouseOut);
+    editorElement.addEventListener('contextmenu', handleContextMenu);
+    return () => {
+      editorElement.removeEventListener('mouseover', handleMouseOver);
+      editorElement.removeEventListener('mouseout', handleMouseOut);
+      editorElement.removeEventListener('contextmenu', handleContextMenu);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [editor]);
 
   // Debounced save function
@@ -190,7 +243,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     }, 1000); // 1 second debounce
   }, [currentNote, title, onSave]);
 
-  // Close prompt and command menu when clicking outside
+  // Close prompt, command menu, table controls, and context menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (promptRef.current && !promptRef.current.contains(event.target)) {
@@ -198,6 +251,12 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       }
       if (commandMenuRef.current && !commandMenuRef.current.contains(event.target)) {
         setShowCommandMenu(false);
+      }
+      if (tableControlsRef.current && !tableControlsRef.current.contains(event.target)) {
+        setShowTableControls(false);
+      }
+      if (tableContextMenuRef.current && !tableContextMenuRef.current.contains(event.target)) {
+        setShowTableContextMenu(false);
       }
     };
 
@@ -247,9 +306,9 @@ const Editor = ({ currentNote, onSave, ...props }) => {
     return () => editor.off("update", handler);
   }, [editor, currentNote, title]);
 
-  // Update prompt and command menu position on scroll
+  // Update prompt, command menu, table controls, and context menu position on scroll
   useEffect(() => {
-    if ((!showPrompt && !showCommandMenu) || !editor || !editorRef.current) return;
+    if ((!showPrompt && !showCommandMenu && !showTableControls && !showTableContextMenu) || !editor || !editorRef.current) return;
 
     const updatePosition = () => {
       const { state } = editor;
@@ -267,7 +326,7 @@ const Editor = ({ currentNote, onSave, ...props }) => {
 
     window.addEventListener('scroll', updatePosition, true);
     return () => window.removeEventListener('scroll', updatePosition, true);
-  }, [showPrompt, showCommandMenu, editor]);
+  }, [showPrompt, showCommandMenu, showTableControls, showTableContextMenu, editor]);
 
   // Cleanup save timeout on unmount
   useEffect(() => {
@@ -379,6 +438,210 @@ const Editor = ({ currentNote, onSave, ...props }) => {
       e.preventDefault();
       handleGrokSubmit(e);
     }
+  };
+
+  const renderTableControls = () => {
+    return (
+      <>
+        <div
+          ref={tableControlsRef}
+          style={{
+            position: 'absolute',
+            left: `${tableControlPosition.x}px`,
+            top: `${tableControlPosition.y}px`,
+            zIndex: 50,
+          }}
+          className="bg-white border border-gray-200 rounded-full shadow-lg p-1 backdrop-blur-sm"
+        >
+          <button
+            onClick={() => {
+              editor.chain().focus().addColumnAfter().run();
+              setShowTableControls(false);
+            }}
+            className="text-blue-600 hover:text-blue-800"
+            title="Add Column After"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        <div
+          ref={tableControlsRef}
+          style={{
+            position: 'absolute',
+            left: `${tableControlPosition.xRow}px`,
+            top: `${tableControlPosition.yRow}px`,
+            zIndex: 50,
+          }}
+          className="bg-white border border-gray-200 rounded-full shadow-lg p-1 backdrop-blur-sm"
+        >
+          <button
+            onClick={() => {
+              editor.chain().focus().addRowAfter().run();
+              setShowTableControls(false);
+            }}
+            className="text-blue-600 hover:text-blue-800"
+            title="Add Row After"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  const renderTableContextMenu = () => {
+    return (
+      <div
+        ref={tableContextMenuRef}
+        style={{
+          position: 'absolute',
+          left: `${contextMenuPosition.x}px`,
+          top: `${contextMenuPosition.y}px`,
+          zIndex: 60,
+        }}
+        className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 backdrop-blur-sm min-w-[150px]"
+      >
+        <div className="text-sm text-gray-700 mb-1">Table Options</div>
+        <ul className="space-y-1">
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().addColumnBefore().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().addColumnBefore()}
+            >
+              Add Column Before
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().addColumnAfter().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().addColumnAfter()}
+            >
+              Add Column After
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().addRowBefore().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().addRowBefore()}
+            >
+              Add Row Before
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().addRowAfter().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().addRowAfter()}
+            >
+              Add Row After
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().deleteColumn().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().deleteColumn()}
+            >
+              Delete Column
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().deleteRow().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().deleteRow()}
+            >
+              Delete Row
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().deleteTable().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().deleteTable()}
+            >
+              Delete Table
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().toggleHeaderRow().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().toggleHeaderRow()}
+            >
+              Toggle Header Row
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().toggleHeaderColumn().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().toggleHeaderColumn()}
+            >
+              Toggle Header Column
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().mergeCells().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().mergeCells()}
+            >
+              Merge Cells
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => {
+                editor.chain().focus().splitCell().run();
+                setShowTableContextMenu(false);
+              }}
+              className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+              disabled={!editor.can().splitCell()}
+            >
+              Split Cell
+            </button>
+          </li>
+        </ul>
+      </div>
+    );
   };
 
   // Stream markdown text into the editor as TipTap content, chunk by chunk.
@@ -559,6 +822,8 @@ const Editor = ({ currentNote, onSave, ...props }) => {
             </ul>
           </div>
         )}
+        {showTableControls && renderTableControls()}
+        {showTableContextMenu && renderTableContextMenu()}
       </div>
     </div>
   );
