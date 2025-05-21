@@ -848,9 +848,9 @@ const Editor = ({ currentNote, onSave, ...props }) => {
               top: `${promptPosition.y}px`,
               zIndex: 50,
             }}
-            className="bg-white/95 border border-gray-200 rounded-xl shadow-lg p-3 backdrop-blur-sm min-w-[200px]"
+            className="bg-white/98 border border-gray-200 rounded-xl shadow-xl p-4 backdrop-blur-md min-w-[240px] max-h-[300px] overflow-y-auto"
           >
-            <div className="text-sm text-gray-700 mb-2">Commands</div>
+            <div className="text-sm font-medium text-gray-700 mb-3 border-b border-gray-200 pb-1">Quick Commands</div>
             <ul className="space-y-1">
               <li>
                 <button
@@ -858,8 +858,11 @@ const Editor = ({ currentNote, onSave, ...props }) => {
                     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
                     setShowCommandMenu(false);
                   }}
-                  className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded text-sm text-gray-800 transition-colors"
+                  className="w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm text-gray-800 font-normal transition-colors flex items-center gap-2"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
                   Insert Table
                 </button>
               </li>
