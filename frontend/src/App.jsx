@@ -1,11 +1,13 @@
 import { useState } from "react";
 import Editor from "./components/Editor";
 import Sidebar from "./components/Sidebar";
+import { CollapseButton } from "./utils/toolbarUtils.jsx";
 
 export default function App() {
   const [selectedNote, setSelectedNote] = useState(null);
   const [notes, setNotes] = useState([]);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isRightCollapsed, setIsRightCollapsed] = useState(false);
   const [theme, setTheme] = useState('light');
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
 
@@ -25,12 +27,12 @@ export default function App() {
         setNotes={setNotes}
         selectedId={selectedNote?.id}
         onSelect={(note) => setSelectedNote(note)}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
+        isCollapsed={isLeftCollapsed}
+        setIsCollapsed={setIsLeftCollapsed}
         theme={theme}
         toggleTheme={toggleTheme}
       />
-      <main className={`flex-1 h-screen overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-20' : 'ml-64'} mr-64`}>
+      <main className={`flex-1 h-screen overflow-auto transition-all duration-300 ${isLeftCollapsed ? 'ml-20' : 'ml-64'} mr-16`}>
         {selectedNote ? (
           <Editor
             currentNote={selectedNote}
@@ -47,28 +49,28 @@ export default function App() {
           <p className={`p-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Select a note to begin editing.</p>
         )}
       </main>
-      <aside className={`w-64 h-screen overflow-auto border-l ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} fixed right-0`}>
-        <div className="p-4">
-          <h2 className={`text-lg font-semibold mb-4 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>Tools</h2>
-          <div className="mb-4">
-            <button
-              onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-              aria-pressed={isAutocompleteEnabled}
-              aria-label="Toggle Autocomplete"
-              title={isAutocompleteEnabled ? "Disable Autocomplete" : "Enable Autocomplete"}
-              className={`
-                relative inline-flex items-center px-4 py-1.5 rounded-full transition-colors duration-300
-                text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 w-full
-                ${isAutocompleteEnabled
-                  ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
-                  : "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-500"
-                }
-              `}
-            >
-              {isAutocompleteEnabled ? "AC ON" : "AC OFF"}
-            </button>
+      <aside className={`h-screen border-l ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} fixed right-0 w-16`}>
+        <div className="flex flex-col items-center p-2 h-full">
+          <div className="text-xs font-semibold mb-2 text-center w-full">
+            <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Status</span>
           </div>
-          {/* Add more toolbar items here as needed */}
+          <button
+            onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
+            aria-pressed={isAutocompleteEnabled}
+            aria-label="Toggle Autocomplete"
+            title={isAutocompleteEnabled ? "Disable Autocomplete" : "Enable Autocomplete"}
+            className={`
+              inline-flex items-center justify-center p-1 rounded-full transition-colors duration-300
+              text-xs font-medium focus:outline-none focus:ring-1 focus:ring-offset-1 mb-2
+              ${isAutocompleteEnabled
+                ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                : "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-500"
+              }
+            `}
+          >
+            {isAutocompleteEnabled ? "AC ON" : "AC OFF"}
+          </button>
+          {/* Add more status indicators here as needed */}
         </div>
       </aside>
     </div>

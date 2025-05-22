@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAllNotes, saveNote, deleteNote } from "../api";
+import { CollapseButton } from "../utils/toolbarUtils.jsx";
 
 export default function Sidebar({ onSelect, selectedId, notes, setNotes, isCollapsed, setIsCollapsed, theme, toggleTheme }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,37 +63,30 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
     <div className="relative">
       <div className={`fixed top-0 left-0 h-screen ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-r'} transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="h-full flex flex-col">
-          {/* Toggle Button */}
-            <div className="relative">
-              <button
-                onClick={() => setIsCollapsed(prev => !prev)}
-                className={`absolute -right-3 top-4 ${theme === 'dark' ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-white' : 'bg-white border-gray-300 rounded-full hover:bg-gray-50 text-gray-800'} p-1 shadow-sm transition-colors z-50`}
-              >
-                <svg
-                  className={`w-4 h-4 transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          {/* Toggle Buttons */}
+          <div className="relative">
+            <CollapseButton 
+              isCollapsed={isCollapsed} 
+              onToggle={() => setIsCollapsed(prev => !prev)} 
+              position="left" 
+              theme={theme} 
+            />
+            <button
+              onClick={toggleTheme}
+              className={`absolute -right-3 top-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 hover:bg-gray-700' : 'bg-white border rounded-full'} p-1 shadow-sm hover:bg-gray-50 transition-colors z-50`}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.021 11.314l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-              </button>
-              <button
-                onClick={toggleTheme}
-                className={`absolute -right-3 top-10 ${theme === 'dark' ? 'bg-gray-800 border-gray-700 hover:bg-gray-700' : 'bg-white border rounded-full'} p-1 shadow-sm hover:bg-gray-50 transition-colors z-50`}
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? (
-                  <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.021 11.314l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                  </svg>
-                )}
-              </button>
-            </div>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+              )}
+            </button>
+          </div>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
