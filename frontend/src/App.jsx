@@ -50,23 +50,23 @@ export default function App() {
           <p className={`p-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Select a note to begin editing.</p>
         )}
       </main>
-      <aside className={`h-screen border-l ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} fixed right-0 w-16`}>
-        <div className="flex flex-col items-center p-2 h-full">
+      <aside className={`h-screen border-l ${theme === 'dark' ? 'border-gray-700 bg-gradient-to-b from-gray-800 to-gray-900' : 'border-gray-200 bg-gradient-to-b from-white to-gray-100'} fixed right-0 w-20 shadow-lg`}>
+        <div className="flex flex-col items-center p-3 h-full">
           <button
             onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
             aria-pressed={isAutocompleteEnabled}
             aria-label="Toggle Autocomplete"
             title={isAutocompleteEnabled ? "Disable Autocomplete" : "Enable Autocomplete"}
             className={`
-              inline-flex items-center justify-center p-1 rounded-full transition-colors duration-300
-              text-xs font-medium focus:outline-none focus:ring-1 focus:ring-offset-1 mb-2
+              inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
+              text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
               ${isAutocompleteEnabled
-                ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
-                : "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-500"
+                ? "bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 focus:ring-blue-500 shadow-md"
+                : "bg-gray-300 text-gray-800 hover:bg-gray-400 hover:scale-110 focus:ring-gray-500 shadow-md"
               }
             `}
           >
-            <span className="text-sm">✍️</span>
+            <span className="text-base">✍️</span>
           </button>
           <button
             onClick={async () => {
@@ -90,12 +90,12 @@ export default function App() {
             aria-label="Backup Database"
             title="Backup Database"
             className={`
-              inline-flex items-center justify-center p-1 rounded-full transition-colors duration-300
-              text-xs font-medium focus:outline-none focus:ring-1 focus:ring-offset-1 mb-2
-              bg-green-600 text-white hover:bg-green-700 focus:ring-green-500
+              inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
+              text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
+              bg-green-600 text-white hover:bg-green-700 hover:scale-110 focus:ring-green-500 shadow-md
             `}
           >
-            <span className="text-sm">💾</span>
+            <span className="text-base">💾</span>
           </button>
           {/* Add more status indicators here as needed */}
         </div>
