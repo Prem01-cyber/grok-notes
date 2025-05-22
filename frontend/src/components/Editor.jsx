@@ -136,7 +136,10 @@ const Editor = ({
               text: `Output: ${output}`,
               marks: [{ type: "code" }]
             }
-          ]
+          ],
+          attrs: {
+            class: "bg-gray-900 text-white p-2 rounded-md"
+          }
         });
       } else {
         const errorText = await response.text();
@@ -150,22 +153,28 @@ const Editor = ({
               text: `Error: ${errorText}`,
               marks: [{ type: "code" }]
             }
-          ]
+          ],
+          attrs: {
+            class: "bg-gray-900 text-white p-2 rounded-md"
+          }
         });
       }
     } catch (error) {
       setCodeOutputs(prev => ({ ...prev, [position]: `Error: ${error.message}` }));
       editor.commands.setTextSelection(position);
-      editor.commands.insertContent({
-        type: "paragraph",
-        content: [
-          {
-            type: "text",
-            text: `Error: ${error.message}`,
-            marks: [{ type: "code" }]
+        editor.commands.insertContent({
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: `Error: ${error.message}`,
+              marks: [{ type: "code" }]
+            }
+          ],
+          attrs: {
+            class: "bg-gray-900 text-white p-2 rounded-md"
           }
-        ]
-      });
+        });
     }
   };
 
