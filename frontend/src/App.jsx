@@ -60,9 +60,13 @@ export default function App() {
             className={`
               inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
               text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
-              ${isAutocompleteEnabled
-                ? "bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 focus:ring-blue-500 shadow-md"
-                : "bg-gray-300 text-gray-800 hover:bg-gray-400 hover:scale-110 focus:ring-gray-500 shadow-md"
+              ${theme === 'dark' 
+                ? isAutocompleteEnabled
+                  ? "bg-gray-600 text-white hover:bg-gray-500 hover:scale-110 focus:ring-gray-400 shadow-md"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:scale-110 focus:ring-gray-500 shadow-md"
+                : isAutocompleteEnabled
+                  ? "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:scale-110 focus:ring-gray-400 shadow-md"
+                  : "bg-gray-300 text-gray-600 hover:bg-gray-400 hover:scale-110 focus:ring-gray-500 shadow-md"
               }
             `}
           >
@@ -92,7 +96,10 @@ export default function App() {
             className={`
               inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
               text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
-              bg-green-600 text-white hover:bg-green-700 hover:scale-110 focus:ring-green-500 shadow-md
+              ${theme === 'dark'
+                ? "bg-gray-600 text-white hover:bg-gray-500 hover:scale-110 focus:ring-gray-400 shadow-md"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:scale-110 focus:ring-gray-400 shadow-md"
+              }
             `}
           >
             <span className="text-base">💾</span>
@@ -137,7 +144,10 @@ export default function App() {
             className={`
               inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
               text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
-              bg-blue-600 text-white hover:bg-blue-700 hover:scale-110 focus:ring-blue-500 shadow-md
+              ${theme === 'dark'
+                ? "bg-gray-600 text-white hover:bg-gray-500 hover:scale-110 focus:ring-gray-400 shadow-md"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:scale-110 focus:ring-gray-400 shadow-md"
+              }
             `}
           >
             <span className="text-base">📤</span>
