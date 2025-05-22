@@ -1,6 +1,7 @@
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+from typing import Generator
 
 load_dotenv()
 
@@ -19,18 +20,33 @@ def get_summary_from_grok(text: str) -> str:
     )
     return response.choices[0].message.content.strip()
 
-def stream_grok_response(text: str, note_title: str, note_context: str):
+def stream_grok_response(text: str, note_title: str, note_context: str) -> Generator[str, None, None]:
     try:
-        # 👇 Construct the user prompt with contextual grounding
-        user_prompt = (
-            f"You are working inside a structured notes application.\n"
-            f"The user is editing a note titled: '{note_title}'.\n\n"
-            f"Here is the relevant context from the note:\n{note_context}\n\n"
-            f"The user instruction is:\n{text}\n\n"
-            f"Please provide a response that is informative, clear, and helpful.\n"
-            f"Use bullet points, subheadings, or code blocks if they improve readability.\n"
-            f"Do not repeat what is already in the context unless it's necessary for clarity.\n"
-        )
+        # 👇 Advanced prompt for Notion-quality AI note generation
+        user_prompt = f"""
+            You are embedded in a professional, structured note-taking app similar to Notion. Your job is to help users enhance, extend, or synthesize content into highly usable, structured, and visually organized notes.
+
+            ## Note Title:
+            {note_title}
+
+            ## Existing Context:
+            {note_context}
+
+            ## User Instruction:
+            {text}
+
+            ## Instructions:
+            Respond with a markdown-style structure optimized for clarity and readability. Your response must include the following:
+
+            1. **Main heading** summarizing the topic.
+            2. **Brief overview paragraph** giving a high-level summary (2–3 sentences max).
+            3. **Well-defined subheadings** for key ideas or sections.
+            4. **Bullet points or numbered lists** under each subheading for detailed elaboration.
+            5. **Code blocks** for technical instructions (if relevant).
+            6. **Avoid**: Repetition of the context unless needed, generic filler, or conversational fluff.
+
+            Be clear, direct, and knowledge-rich. Prioritize insight and structure over verbosity.
+            """
 
         response = client.chat.completions.create(
             model="grok-3-latest",
@@ -38,9 +54,10 @@ def stream_grok_response(text: str, note_title: str, note_context: str):
                 {
                     "role": "system",
                     "content": (
-                        "You are an intelligent assistant integrated into a structured note-taking app "
-                        "like Notion. Your goal is to help users expand, explain, or improve their notes "
-                        "based on existing context. Be concise, context-aware, and use formatting to aid clarity."
+                        "You are an expert technical writer and note composer embedded in a powerful, structured workspace like Notion. "
+                        "Your responses are always actionable, cleanly formatted, and optimized for professionals. "
+                        "Avoid conversational tone. Use markdown formatting to convey structure. Focus on transforming raw input "
+                        "into high-quality notes."
                     )
                 },
                 {
