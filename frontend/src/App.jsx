@@ -51,9 +51,6 @@ export default function App() {
       </main>
       <aside className={`h-screen border-l ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} fixed right-0 w-16`}>
         <div className="flex flex-col items-center p-2 h-full">
-          <div className="text-xs font-semibold mb-2 text-center w-full">
-            <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Status</span>
-          </div>
           <button
             onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
             aria-pressed={isAutocompleteEnabled}
@@ -68,7 +65,7 @@ export default function App() {
               }
             `}
           >
-            {isAutocompleteEnabled ? "AC ON" : "AC OFF"}
+            <span className="text-sm">✍️</span>
           </button>
           {/* Add more status indicators here as needed */}
         </div>
