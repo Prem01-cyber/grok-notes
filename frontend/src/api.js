@@ -166,3 +166,22 @@ export async function runPythonCode(payload) {
     }
   });
 }
+
+export async function getBackup() {
+  try {
+    const response = await fetch(`${API_BASE}/notes-backup`, {
+      method: 'GET',
+      headers: {
+        "Accept": "application/octet-stream"
+      }
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Failed to download backup: ${response.status} - ${errText}`);
+    }
+    return response;
+  } catch (error) {
+    console.error("Error downloading backup:", error);
+    throw error;
+  }
+}

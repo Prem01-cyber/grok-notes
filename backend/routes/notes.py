@@ -48,3 +48,11 @@ def delete_note(note_id: int):
         session.commit()
         return {"message": "Note deleted successfully"}
 
+@router.get("/notes-backup")
+def download_backup():
+    import os
+    from fastapi.responses import FileResponse
+    db_path = "./notes.db"
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="Database file not found")
+    return FileResponse(db_path, media_type="application/octet-stream", filename="notes_backup.db")

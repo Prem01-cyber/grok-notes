@@ -2,6 +2,7 @@ import { useState } from "react";
 import Editor from "./components/Editor";
 import Sidebar from "./components/Sidebar";
 import { CollapseButton } from "./utils/toolbarUtils.jsx";
+import { getBackup } from "./api";
 
 export default function App() {
   const [selectedNote, setSelectedNote] = useState(null);
@@ -66,6 +67,35 @@ export default function App() {
             `}
           >
             <span className="text-sm">✍️</span>
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const response = await getBackup();
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'notes_backup.db';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                alert('Database backup downloaded successfully');
+              } catch (error) {
+                console.error('Backup download failed:', error);
+                alert('Failed to download backup. Please try again.');
+              }
+            }}
+            aria-label="Backup Database"
+            title="Backup Database"
+            className={`
+              inline-flex items-center justify-center p-1 rounded-full transition-colors duration-300
+              text-xs font-medium focus:outline-none focus:ring-1 focus:ring-offset-1 mb-2
+              bg-green-600 text-white hover:bg-green-700 focus:ring-green-500
+            `}
+          >
+            <span className="text-sm">💾</span>
           </button>
           {/* Add more status indicators here as needed */}
         </div>
