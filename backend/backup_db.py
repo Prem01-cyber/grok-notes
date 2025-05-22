@@ -35,5 +35,26 @@ def backup_database():
         logging.error(f"Backup failed: {str(e)}")
         print(f"Error during backup: {str(e)}")
 
+def restore_database(backup_path):
+    """Restore the database from a specified backup file."""
+    try:
+        if not os.path.exists(backup_path):
+            logging.error(f"Backup file not found: {backup_path}")
+            print(f"Error: Backup file not found at {backup_path}")
+            return False
+        
+        # Backup the current database before restoring
+        backup_database()
+        
+        # Restore the database
+        shutil.copy2(backup_path, DATABASE_PATH)
+        logging.info(f"Database restored from: {backup_path}")
+        print(f"Database restored from {backup_path}")
+        return True
+    except Exception as e:
+        logging.error(f"Restore failed: {str(e)}")
+        print(f"Error during restore: {str(e)}")
+        return False
+
 if __name__ == "__main__":
     backup_database()

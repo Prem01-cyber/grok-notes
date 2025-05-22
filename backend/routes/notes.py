@@ -56,3 +56,36 @@ def download_backup():
     if not os.path.exists(db_path):
         raise HTTPException(status_code=404, detail="Database file not found")
     return FileResponse(db_path, media_type="application/octet-stream", filename="notes_backup.db")
+
+@router.post("/notes-restore")
+async def restore_backup(file: UploadFile = File(...)):
+    import os
+    import tempfile
+    from fastapi import UploadFile, File
+    from backup_db import restore_database
+    
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as temp_file:
+            contents = await file.read()
+            temp_file.write(contents)
+            temp_file_path = temp_file.name
+        
+        # Call restore function
+        success = restore_database(temp_file_path)
+        
+        # Clean up temporary file
+        os.unlink(temp_file_path)
+        
+        if success:
+            return {"message": "Database restored successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Database restoration failed")
+    except Exception as e:
+        # Ensure temporary file is deleted in case of error
+        if 'temp_file_path' in locals():
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+        raise HTTPException(status_code=500, detail=f"Error during restoration: {str(e)}")
