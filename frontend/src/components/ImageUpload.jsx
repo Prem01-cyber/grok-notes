@@ -37,13 +37,19 @@ const ImageUpload = ({ editor, position, onClose, theme }) => {
 
   const handleInsert = () => {
     if (preview) {
-      editor.commands.insertContent({
-        type: 'image',
-        attrs: {
-          src: preview,
-          alt: "Uploaded image"
+      // Insert both the image and a following paragraph in a single operation
+      editor.chain().focus().insertContent([
+        {
+          type: 'image',
+          attrs: {
+            src: preview,
+            alt: "Uploaded image"
+          }
+        },
+        {
+          type: 'paragraph'
         }
-      });
+      ]).run();
       onClose();
     }
   };
