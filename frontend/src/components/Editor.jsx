@@ -7,7 +7,9 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Table } from "../extensions/Table";
-// If needed, import other extensions (like Link, Image, Underline) if their nodes/marks are used.
+import { Image } from "../extensions/Image";
+import ImageUpload from "./ImageUpload";
+import ImageEmbed from "./ImageEmbed";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { streamGrokText, saveNote, streamGrokAutocomplete } from "../api";
@@ -84,6 +86,8 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
     y: 0,
   });
   const [isFetchingAutocomplete, setIsFetchingAutocomplete] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showImageEmbed, setShowImageEmbed] = useState(false);
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const commandMenuRef = useRef(null);
@@ -97,6 +101,8 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
   const currentCellRef = useRef(null);
   const autocompleteRef = useRef(null);
   const autocompleteTimeoutRef = useRef(null);
+  const imageUploadRef = useRef(null);
+  const imageEmbedRef = useRef(null);
 
   // Initialize TipTap editor with desired extensions and content
   const editor = useEditor({
@@ -121,6 +127,7 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
       TaskItem.configure({
         nested: true,
       }),
+      Image,
     ],
     content: currentNote?.content_json
       ? JSON.parse(currentNote.content_json)
@@ -349,7 +356,7 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
     [currentNote, title, onSave]
   );
 
-  // Close prompt, command menu, table controls, context menu, and autocomplete when clicking outside
+  // Close prompt, command menu, table controls, context menu, autocomplete, image upload, and image embed when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (promptRef.current && !promptRef.current.contains(event.target)) {
@@ -378,6 +385,18 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
         !autocompleteRef.current.contains(event.target)
       ) {
         setShowAutocomplete(false);
+      }
+      if (
+        imageUploadRef.current &&
+        !imageUploadRef.current.contains(event.target)
+      ) {
+        setShowImageUpload(false);
+      }
+      if (
+        imageEmbedRef.current &&
+        !imageEmbedRef.current.contains(event.target)
+      ) {
+        setShowImageEmbed(false);
       }
     };
 
@@ -620,6 +639,50 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
         </svg>
       ),
     },
+    {
+      name: "Upload Image",
+      category: "Insert",
+      action: () => {
+        setShowImageUpload(true);
+        setShowCommandMenu(false);
+      },
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5.5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10.5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15.5a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM13.293 12.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L15.586 17H13v-2h2.586l-2.293-2.293a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Embed Image",
+      category: "Insert",
+      action: () => {
+        setShowImageEmbed(true);
+        setShowCommandMenu(false);
+      },
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L9.586 10 7.293 7.707a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
   ];
 
   // Function to get filtered commands based on search input
@@ -711,14 +774,16 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
     };
   }, [editor, currentNote, title, onSave, isFetchingAutocomplete]);
 
-  // Update prompt, command menu, table controls, context menu, and autocomplete position on scroll
+  // Update prompt, command menu, table controls, context menu, autocomplete, image upload, and image embed position on scroll
   useEffect(() => {
     if (
       (!showPrompt &&
         !showCommandMenu &&
         !showTableControls &&
         !showTableContextMenu &&
-        !showAutocomplete) ||
+        !showAutocomplete &&
+        !showImageUpload &&
+        !showImageEmbed) ||
       !editor ||
       !editorRef.current
     )
@@ -747,6 +812,8 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
     showTableControls,
     showTableContextMenu,
     showAutocomplete,
+    showImageUpload,
+    showImageEmbed,
     editor,
   ]);
 
@@ -1528,6 +1595,24 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
               Press Tab to accept
             </div>
           </div>
+        )}
+        {showImageUpload && (
+          <ImageUpload
+            editor={editor}
+            position={promptPosition}
+            onClose={() => setShowImageUpload(false)}
+            theme={theme}
+            ref={imageUploadRef}
+          />
+        )}
+        {showImageEmbed && (
+          <ImageEmbed
+            editor={editor}
+            position={promptPosition}
+            onClose={() => setShowImageEmbed(false)}
+            theme={theme}
+            ref={imageEmbedRef}
+          />
         )}
       </div>
     </div>
