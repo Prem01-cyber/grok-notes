@@ -11,7 +11,7 @@ import { Table } from "../extensions/Table";
 // If needed, import other extensions (like Link, Image, Underline) if their nodes/marks are used.
 import { unified } from "unified";
 import remarkParse from "remark-parse";
-import { streamGrokText, saveNote } from "../api";
+import { streamGrokText, saveNote, streamGrokAutocomplete } from "../api";
 import { marked } from "marked";
 import { convertNodeToJSON, flattenContent } from "../utils/editorUtils";
 
@@ -60,6 +60,10 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
   const [streamStatus, setStreamStatus] = useState({ isStreaming: false, progress: 0 });
   const [hoveredButton, setHoveredButton] = useState(null);
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteSuggestion, setAutocompleteSuggestion] = useState("");
+  const [autocompletePosition, setAutocompletePosition] = useState({ x: 0, y: 0 });
+  const [isFetchingAutocomplete, setIsFetchingAutocomplete] = useState(false);
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const commandMenuRef = useRef(null);
@@ -71,6 +75,8 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
   const selectionRef = useRef(null);
   const editorInstanceRef = useRef(null);
   const currentCellRef = useRef(null);
+  const autocompleteRef = useRef(null);
+  const autocompleteTimeoutRef = useRef(null);
 
   // Initialize TipTap editor with desired extensions and content
   const editor = useEditor({
@@ -167,6 +173,14 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
             }, 0);
             return true;
           }
+        }
+        // Handle Tab key for autocomplete acceptance
+        if (event.key === 'Tab' && showAutocomplete) {
+          event.preventDefault();
+          editor.commands.insertContent(autocompleteSuggestion);
+          setShowAutocomplete(false);
+          setAutocompleteSuggestion("");
+          return true;
         }
         return false;
       },
@@ -305,7 +319,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     }, 1000); // 1 second debounce
   }, [currentNote, title, onSave]);
 
-  // Close prompt, command menu, table controls, and context menu when clicking outside
+  // Close prompt, command menu, table controls, context menu, and autocomplete when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (promptRef.current && !promptRef.current.contains(event.target)) {
@@ -319,6 +333,9 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       }
       if (tableContextMenuRef.current && !tableContextMenuRef.current.contains(event.target)) {
         setShowTableContextMenu(false);
+      }
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+        setShowAutocomplete(false);
       }
     };
 
@@ -371,11 +388,11 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     }
   }, [editor, currentNote]);
 
-  // Autosave effect
+  // Autosave and autocomplete effect
   useEffect(() => {
     if (!editor || !currentNote) return;
 
-    const handler = () => {
+    const autosaveHandler = () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
 
       autosaveTimer.current = setTimeout(async () => {
@@ -389,13 +406,47 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       }, 1500);
     };
 
-    editor.on("update", handler);
-    return () => editor.off("update", handler);
-  }, [editor, currentNote, title]);
+    const autocompleteHandler = () => {
+      if (autocompleteTimeoutRef.current) {
+        clearTimeout(autocompleteTimeoutRef.current);
+      }
 
-  // Update prompt, command menu, table controls, and context menu position on scroll
+      autocompleteTimeoutRef.current = setTimeout(() => {
+        const { state } = editor;
+        const { selection } = state;
+        const { $from } = selection;
+        const text = $from.nodeBefore ? $from.nodeBefore.textContent : '';
+        
+        if (text && text.length >= 3 && !isFetchingAutocomplete) {
+          const coords = editor.view.coordsAtPos(selection.from);
+          const editorElement = editorRef.current;
+          const editorRect = editorElement.getBoundingClientRect();
+          const x = coords.left - editorRect.left;
+          const y = coords.top - editorRect.top;
+          
+          setAutocompletePosition({ x, y });
+          fetchAutocompleteSuggestion(text);
+        } else {
+          setShowAutocomplete(false);
+          setAutocompleteSuggestion("");
+        }
+      }, 500);
+    };
+
+    editor.on("update", autosaveHandler);
+    editor.on("update", autocompleteHandler);
+    return () => {
+      editor.off("update", autosaveHandler);
+      editor.off("update", autocompleteHandler);
+      if (autocompleteTimeoutRef.current) {
+        clearTimeout(autocompleteTimeoutRef.current);
+      }
+    };
+  }, [editor, currentNote, title, onSave, isFetchingAutocomplete]);
+
+  // Update prompt, command menu, table controls, context menu, and autocomplete position on scroll
   useEffect(() => {
-    if ((!showPrompt && !showCommandMenu && !showTableControls && !showTableContextMenu) || !editor || !editorRef.current) return;
+    if ((!showPrompt && !showCommandMenu && !showTableControls && !showTableContextMenu && !showAutocomplete) || !editor || !editorRef.current) return;
 
     const updatePosition = () => {
       const { state } = editor;
@@ -409,11 +460,12 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       const y = coords.top - editorRect.top;
       
       setPromptPosition({ x, y });
+      setAutocompletePosition({ x, y });
     };
 
     window.addEventListener('scroll', updatePosition, true);
     return () => window.removeEventListener('scroll', updatePosition, true);
-  }, [showPrompt, showCommandMenu, showTableControls, showTableContextMenu, editor]);
+  }, [showPrompt, showCommandMenu, showTableControls, showTableContextMenu, showAutocomplete, editor]);
 
   // Cleanup save timeout on unmount
   useEffect(() => {
@@ -524,6 +576,46 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleGrokSubmit(e);
+    }
+  };
+
+  const fetchAutocompleteSuggestion = async (currentText) => {
+    if (isFetchingAutocomplete) return;
+    
+    setIsFetchingAutocomplete(true);
+    try {
+      const noteJSON = editor.getJSON();
+      const response = await streamGrokAutocomplete({
+        current_text: currentText,
+        note_title: title,
+        note_context: extractStructuredContext(noteJSON),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Autocomplete API error: ${response.status}`);
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let suggestion = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        suggestion += decoder.decode(value);
+      }
+      
+      if (suggestion) {
+        setAutocompleteSuggestion(suggestion.trim());
+        setShowAutocomplete(true);
+      } else {
+        setShowAutocomplete(false);
+      }
+    } catch (error) {
+      console.error("Error fetching autocomplete suggestion:", error);
+      setShowAutocomplete(false);
+    } finally {
+      setIsFetchingAutocomplete(false);
     }
   };
 
@@ -961,6 +1053,22 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         )}
         {showTableControls && renderTableControls()}
         {showTableContextMenu && renderTableContextMenu()}
+        {showAutocomplete && (
+          <div
+            ref={autocompleteRef}
+            style={{
+              position: 'absolute',
+              left: `${autocompletePosition.x}px`,
+              top: `${autocompletePosition.y}px`,
+              zIndex: 50,
+            }}
+            className={`bg-white/95 border border-gray-200 rounded-lg shadow-lg p-2 backdrop-blur-sm min-w-[200px] max-w-[400px] ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white text-gray-800'}`}
+          >
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Autocomplete Suggestion</div>
+            <div className="text-sm mb-2">{autocompleteSuggestion}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Press Tab to accept</div>
+          </div>
+        )}
       </div>
     </div>
   );

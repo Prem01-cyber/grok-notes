@@ -74,3 +74,53 @@ def stream_grok_response(text: str, note_title: str, note_context: str) -> Gener
 
     except Exception as e:
         yield f"[Error] {str(e)}"
+
+def stream_grok_autocomplete(current_text: str, note_title: str, note_context: str) -> Generator[str, None, None]:
+    try:
+        # 👇 Prompt optimized for quick autocomplete suggestions
+        user_prompt = f"""
+            You are assisting in a note-taking app with real-time autocomplete. Your task is to provide a short, relevant completion for the user's current input based on the context of their note.
+
+            ## Note Title:
+            {note_title}
+
+            ## Existing Context:
+            {note_context}
+
+            ## Current User Input (to complete):
+            {current_text}
+
+            ## Instructions:
+            - Provide a concise completion (1-2 sentences or a short phrase) for the current input.
+            - Ensure the completion is contextually relevant and matches the tone and style of the note.
+            - Do not include markdown formatting or headings; respond with plain text.
+            - Avoid long explanations or unrelated content.
+            - Focus on speed and relevance for an autocomplete experience.
+            """
+
+        response = client.chat.completions.create(
+            model="grok-3-latest",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an autocomplete assistant in a note-taking app. Provide short, relevant text completions "
+                        "based on the user's current input and note context. Respond quickly with plain text, avoiding "
+                        "unnecessary formatting or lengthy content."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt
+                }
+            ],
+            stream=True,
+            max_tokens=50  # Limit response length for faster autocomplete
+        )
+
+        for chunk in response:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+
+    except Exception as e:
+        yield f"[Error] {str(e)}"

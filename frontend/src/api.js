@@ -62,6 +62,46 @@ export async function streamGrokText(payload) {
   });
 }
 
+export async function streamGrokAutocomplete(payload) {
+  console.log('🚀 streamGrokAutocomplete called with payload:', payload);
+  
+  if (!payload || typeof payload !== 'object') {
+    console.error('❌ Invalid payload:', payload);
+    throw new Error('Invalid payload provided to streamGrokAutocomplete');
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(`${API_BASE}/generate/autocomplete`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "text/event-stream"
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("🚨 Grok Autocomplete API error:", response.status, errText);
+        reject(new Error(`Grok Autocomplete API error: ${response.status} - ${errText}`));
+        return;
+      }
+
+      if (!response.body) {
+        console.error("🚨 No response body from Grok Autocomplete API");
+        reject(new Error("No response body from Grok Autocomplete API"));
+        return;
+      }
+
+      resolve(response);
+    } catch (error) {
+      console.error("🚨 Error in streamGrokAutocomplete:", error);
+      reject(new Error(`StreamGrokAutocomplete failed: ${error.message}`));
+    }
+  });
+}
+
 export async function getAllNotes() {
   try {
     const res = await axios.get(`${API_BASE}/notes`);
