@@ -42,7 +42,7 @@ function extractStructuredContext(json) {
     .join("\n");
 }
 
-const Editor = ({ currentNote, onSave, theme, ...props }) => {
+const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptInput, setPromptInput] = useState("");
   const [title, setTitle] = useState(currentNote?.title || "");
@@ -84,7 +84,6 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     y: 0,
   });
   const [isFetchingAutocomplete, setIsFetchingAutocomplete] = useState(false);
-  const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const commandMenuRef = useRef(null);
@@ -1223,77 +1222,56 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <div className="ml-4 text-sm flex items-center gap-2">
-            {saveStatus.status === "saving" && (
-              <span
-                className={`flex items-center ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-500"
-                }`}
-              >
-                <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Saving...
-              </span>
-            )}
-            {saveStatus.status === "saved" && (
-              <span
-                className={
-                  theme === "dark" ? "text-green-400" : "text-green-500"
-                }
-              >
-                Saved
-              </span>
-            )}
-            {saveStatus.status === "error" && (
-              <span
-                className={theme === "dark" ? "text-red-400" : "text-red-500"}
-                title={saveStatus.error}
-              >
-                Save failed
-              </span>
-            )}
-            <button
-              onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
-              aria-pressed={isAutocompleteEnabled}
-              aria-label="Toggle Autocomplete"
-              title={
-                isAutocompleteEnabled
-                  ? "Disable Autocomplete"
-                  : "Enable Autocomplete"
-              }
-              className={`
-              relative inline-flex items-center px-4 py-1.5 rounded-full transition-colors duration-300
-              text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2
-              ${
-                isAutocompleteEnabled
-                  ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
-                  : "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-500"
-              }
-            `}
-            >
-              {isAutocompleteEnabled ? "AC ON" : "AC OFF"}
-            </button>
-          </div>
+            <div className="ml-4 text-sm flex items-center gap-2">
+              {saveStatus.status === "saving" && (
+                <span
+                  className={`flex items-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
+                  <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Saving...
+                </span>
+              )}
+              {saveStatus.status === "saved" && (
+                <span
+                  className={
+                    theme === "dark" ? "text-green-400" : "text-green-500"
+                  }
+                >
+                  Saved
+                </span>
+              )}
+              {saveStatus.status === "error" && (
+                <span
+                  className={theme === "dark" ? "text-red-400" : "text-red-500"}
+                  title={saveStatus.error}
+                >
+                  Save failed
+                </span>
+              )}
+            </div>
         </div>
         <div className="w-full overflow-x-auto">
           <EditorContent editor={editor} ref={editorRef} className="w-full" />
         </div>
 
-        {/* Add streaming progress indicator */}
+        {/* Add streaming progress indicator for AI prompting */}
         {streamStatus.isStreaming && (
           <div className="absolute bottom-4 right-4 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-2">
             <div className="w-4 h-4">
@@ -1325,6 +1303,33 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
                 />
               </div>
             )}
+          </div>
+        )}
+        
+        {/* Add loading indicator for autocomplete */}
+        {isFetchingAutocomplete && isAutocompleteEnabled && (
+          <div className="absolute bottom-4 right-4 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-2">
+            <div className="w-4 h-4">
+              <svg className="animate-spin" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            </div>
+            <span className="text-sm text-gray-600">
+              Fetching autocomplete suggestion...
+            </span>
           </div>
         )}
 
