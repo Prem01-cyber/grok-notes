@@ -217,13 +217,18 @@ const Editor = ({
             return true;
           }
         }
-        // Handle Tab key for autocomplete acceptance
-        if (event.key === "Tab" && showAutocomplete) {
+        // Handle Tab key for autocomplete acceptance or indentation in code block
+        if (event.key === "Tab") {
           event.preventDefault();
-          editor.commands.insertContent(autocompleteSuggestion);
-          setShowAutocomplete(false);
-          setAutocompleteSuggestion("");
-          return true;
+          if (showAutocomplete) {
+            editor.commands.insertContent(autocompleteSuggestion);
+            setShowAutocomplete(false);
+            setAutocompleteSuggestion("");
+            return true;
+          } else if (editor.isActive('codeBlock')) {
+            editor.commands.insertContent('  '); // Insert two spaces for indentation
+            return true;
+          }
         }
         return false;
       },
