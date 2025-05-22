@@ -133,3 +133,36 @@ export async function deleteNote(noteId) {
 
   return response.json();
 }
+
+export async function runPythonCode(payload) {
+  console.log('🚀 runPythonCode called with payload:', payload);
+  
+  if (!payload || typeof payload !== 'object') {
+    console.error('❌ Invalid payload:', payload);
+    throw new Error('Invalid payload provided to runPythonCode');
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(`${API_BASE}/execute/python`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("🚨 Python Execution API error:", response.status, errText);
+        reject(new Error(`Python Execution API error: ${response.status} - ${errText}`));
+        return;
+      }
+
+      resolve(response);
+    } catch (error) {
+      console.error("🚨 Error in runPythonCode:", error);
+      reject(new Error(`runPythonCode failed: ${error.message}`));
+    }
+  });
+}

@@ -7,6 +7,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import CodeHighlight from "../extensions/CodeHighlight";
+import CodeRunner from "../extensions/CodeRunner";
 import { Table } from "../extensions/Table";
 import { Image } from "../extensions/Image";
 import { Video } from "../extensions/Video";
@@ -16,7 +17,7 @@ import VideoUpload from "./VideoUpload";
 import VideoEmbed from "./VideoEmbed";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
-import { streamGrokText, saveNote, streamGrokAutocomplete } from "../api";
+import { streamGrokText, saveNote, streamGrokAutocomplete, runPythonCode } from "../api";
 import { marked } from "marked";
 import { convertNodeToJSON, flattenContent } from "../utils/editorUtils";
 
@@ -116,6 +117,58 @@ const Editor = ({
   const imageUploadRef = useRef(null);
   const imageEmbedRef = useRef(null);
 
+  const [codeOutputs, setCodeOutputs] = useState({});
+
+  // Function to handle running code
+  const handleRunCode = async (code, editor, position) => {
+    try {
+      const response = await runPythonCode({ code });
+      if (response.ok) {
+        const result = await response.json();
+        const output = result.output || result.error || "No output";
+        setCodeOutputs(prev => ({ ...prev, [position]: output }));
+        editor.commands.setTextSelection(position);
+        editor.commands.insertContent({
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: `Output: ${output}`,
+              marks: [{ type: "code" }]
+            }
+          ]
+        });
+      } else {
+        const errorText = await response.text();
+        setCodeOutputs(prev => ({ ...prev, [position]: `Error: ${errorText}` }));
+        editor.commands.setTextSelection(position);
+        editor.commands.insertContent({
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: `Error: ${errorText}`,
+              marks: [{ type: "code" }]
+            }
+          ]
+        });
+      }
+    } catch (error) {
+      setCodeOutputs(prev => ({ ...prev, [position]: `Error: ${error.message}` }));
+      editor.commands.setTextSelection(position);
+      editor.commands.insertContent({
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: `Error: ${error.message}`,
+            marks: [{ type: "code" }]
+          }
+        ]
+      });
+    }
+  };
+
   // Initialize TipTap editor with desired extensions and content
   const editor = useEditor({
     extensions: [
@@ -128,6 +181,9 @@ const Editor = ({
         table: false,
       }),
       CodeHighlight,
+      CodeRunner.configure({
+        onRunCode: handleRunCode
+      }),
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
@@ -626,6 +682,25 @@ const Editor = ({
           <path
             fillRule="evenodd"
             d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm10.293-5.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-2 2a1 1 0 01-1.414-1.414L14.586 15H13v-2h1.586l-1.293-1.293a1 1 0 010-1.414zM6.293 10.293a1 1 0 011.414 0L9 11.586V13h-2v-1.586l-1.293-1.293a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Run Code",
+      category: "Insert",
+      action: () => editor.chain().focus().runCodeBlock().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
             clipRule="evenodd"
           />
         </svg>

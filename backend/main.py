@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.summarize import router as summarize_router
 from routes.ai import router as ai_router
 from routes.notes import router as notes_router
+from routes.execute import router as execute_router
 from database import create_db_and_tables
 
 app = FastAPI()
@@ -24,3 +25,4 @@ create_db_and_tables()
 app.include_router(summarize_router)
 app.include_router(ai_router)
 app.include_router(notes_router)
+app.include_router(execute_router)
