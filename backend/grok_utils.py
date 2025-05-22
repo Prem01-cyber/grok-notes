@@ -77,26 +77,26 @@ def stream_grok_response(text: str, note_title: str, note_context: str) -> Gener
 
 def stream_grok_autocomplete(current_text: str, note_title: str, note_context: str) -> Generator[str, None, None]:
     try:
-        # 👇 Prompt optimized for quick autocomplete suggestions
         user_prompt = f"""
-            You are assisting in a note-taking app with real-time autocomplete. Your task is to provide a short, relevant completion for the user's current input based on the context of their note.
+        You are assisting inside a structured note-taking app. The user is currently typing, and your job is to **continue the thought naturally**, using the note's tone, topic, and previous content.
 
-            ## Note Title:
-            {note_title}
+        ## Note Title:
+        {note_title}
 
-            ## Existing Context:
-            {note_context}
+        ## Existing Note Content:
+        {note_context}
 
-            ## Current User Input (to complete):
-            {current_text}
+        ## Current User Input:
+        {current_text}
 
-            ## Instructions:
-            - Provide a concise completion (1-2 sentences or a short phrase) for the current input.
-            - Ensure the completion is contextually relevant and matches the tone and style of the note.
-            - Do not include markdown formatting or headings; respond with plain text.
-            - Avoid long explanations or unrelated content.
-            - Focus on speed and relevance for an autocomplete experience.
-            """
+        ## Instructions:
+        - Predict what the user is most likely to type next to continue this note.
+        - Maintain the same tone, style, and structure as the rest of the note.
+        - Output **plain text** only. Do not repeat the current input.
+        - Keep the suggestion short (1–2 sentences or a short phrase).
+        - Avoid factual completions unless the note is factual in nature.
+        - Think like a smart co-writer, not a search engine.
+        """
 
         response = client.chat.completions.create(
             model="grok-3-latest",
@@ -104,9 +104,9 @@ def stream_grok_autocomplete(current_text: str, note_title: str, note_context: s
                 {
                     "role": "system",
                     "content": (
-                        "You are an autocomplete assistant in a note-taking app. Provide short, relevant text completions "
-                        "based on the user's current input and note context. Respond quickly with plain text, avoiding "
-                        "unnecessary formatting or lengthy content."
+                        "You are a writing assistant inside a real-time note editor. Given a partial sentence and context, "
+                        "your job is to continue the sentence or paragraph with a natural, stylistic, and relevant extension. "
+                        "Only return plain text — no headings, markdown, or formatting. Keep responses short and flowing."
                     )
                 },
                 {
@@ -115,7 +115,7 @@ def stream_grok_autocomplete(current_text: str, note_title: str, note_context: s
                 }
             ],
             stream=True,
-            max_tokens=50  # Limit response length for faster autocomplete
+            max_tokens=60
         )
 
         for chunk in response:
@@ -124,3 +124,4 @@ def stream_grok_autocomplete(current_text: str, note_title: str, note_context: s
 
     except Exception as e:
         yield f"[Error] {str(e)}"
+
