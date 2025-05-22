@@ -6,6 +6,7 @@ import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import CodeHighlight from "../extensions/CodeHighlight";
 import { Table } from "../extensions/Table";
 import { Image } from "../extensions/Image";
 import { Video } from "../extensions/Video";
@@ -123,13 +124,10 @@ const Editor = ({
         heading: {
           levels: [1, 2, 3],
         },
-        codeBlock: {
-          HTMLAttributes: {
-            class: "rounded-md bg-gray-800 p-5 font-mono text-sm text-gray-100",
-          },
-        },
+        codeBlock: false, // Disable default codeBlock to use CodeBlockLowlight
         table: false,
       }),
+      CodeHighlight,
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
