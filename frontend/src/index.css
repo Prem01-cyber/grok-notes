@@ -165,8 +165,8 @@ body.dark .tiptap p {
 }
 
 .tiptap pre {
-  background-color: #1e293b;
-  color: #e2e8f0;
+  background-color: #f1f5f9;
+  color: #2d3748;
   padding: 1.25rem;
   border-radius: 0.75rem;
   font-size: 0.875rem;
@@ -268,15 +268,15 @@ body.dark .tiptap ::selection {
 }
 
 .tiptap pre::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #e2e6e8;
   border-radius: 4px;
 }
 
 .tiptap pre::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 .tiptap pre::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #a0aec0;
 }
