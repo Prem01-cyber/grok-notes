@@ -47,7 +47,13 @@ function extractStructuredContext(json) {
     .join("\n");
 }
 
-const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props }) => {
+const Editor = ({
+  currentNote,
+  onSave,
+  theme,
+  isAutocompleteEnabled,
+  ...props
+}) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptInput, setPromptInput] = useState("");
   const [title, setTitle] = useState(currentNote?.title || "");
@@ -1358,50 +1364,50 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-            <div className="ml-4 text-sm flex items-center gap-2">
-              {saveStatus.status === "saving" && (
-                <span
-                  className={`flex items-center ${
-                    theme === "dark" ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
-                  <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Saving...
-                </span>
-              )}
-              {saveStatus.status === "saved" && (
-                <span
-                  className={
-                    theme === "dark" ? "text-green-400" : "text-green-500"
-                  }
-                >
-                  Saved
-                </span>
-              )}
-              {saveStatus.status === "error" && (
-                <span
-                  className={theme === "dark" ? "text-red-400" : "text-red-500"}
-                  title={saveStatus.error}
-                >
-                  Save failed
-                </span>
-              )}
-            </div>
+          <div className="ml-4 text-sm flex items-center gap-2">
+            {saveStatus.status === "saving" && (
+              <span
+                className={`flex items-center ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-500"
+                }`}
+              >
+                <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Saving...
+              </span>
+            )}
+            {saveStatus.status === "saved" && (
+              <span
+                className={
+                  theme === "dark" ? "text-green-400" : "text-green-500"
+                }
+              >
+                Saved
+              </span>
+            )}
+            {saveStatus.status === "error" && (
+              <span
+                className={theme === "dark" ? "text-red-400" : "text-red-500"}
+                title={saveStatus.error}
+              >
+                Save failed
+              </span>
+            )}
+          </div>
         </div>
         <div className="w-full overflow-x-auto">
           <EditorContent editor={editor} ref={editorRef} className="w-full" />
@@ -1441,7 +1447,7 @@ const Editor = ({ currentNote, onSave, theme, isAutocompleteEnabled, ...props })
             )}
           </div>
         )}
-        
+
         {/* Add loading indicator for autocomplete */}
         {isFetchingAutocomplete && isAutocompleteEnabled && (
           <div className="absolute bottom-4 right-4 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-2">
