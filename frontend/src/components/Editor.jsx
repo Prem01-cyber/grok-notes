@@ -4,7 +4,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
-import Bold from "@tiptap/extension-bold";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Table } from "../extensions/Table";
@@ -53,17 +52,39 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [showTableControls, setShowTableControls] = useState(false);
   const [showTableContextMenu, setShowTableContextMenu] = useState(false);
-  const [tableControlPosition, setTableControlPosition] = useState({ x: 0, y: 0, type: '', xRow: 0, yRow: 0, typeRow: '' });
-  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [tableControlPosition, setTableControlPosition] = useState({
+    x: 0,
+    y: 0,
+    type: "",
+    xRow: 0,
+    yRow: 0,
+    typeRow: "",
+  });
+  const [contextMenuPosition, setContextMenuPosition] = useState({
+    x: 0,
+    y: 0,
+  });
   const [promptPosition, setPromptPosition] = useState({ x: 0, y: 0 });
-  const [saveStatus, setSaveStatus] = useState({ status: 'idle', error: null });
-  const [streamStatus, setStreamStatus] = useState({ isStreaming: false, progress: 0 });
+  const [saveStatus, setSaveStatus] = useState({ status: "idle", error: null });
+  const [streamStatus, setStreamStatus] = useState({
+    isStreaming: false,
+    progress: 0,
+  });
   const [hoveredButton, setHoveredButton] = useState(null);
-  const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [previewPosition, setPreviewPosition] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteSuggestion, setAutocompleteSuggestion] = useState("");
-  const [autocompletePosition, setAutocompletePosition] = useState({ x: 0, y: 0 });
+  const [autocompletePosition, setAutocompletePosition] = useState({
+    x: 0,
+    y: 0,
+  });
   const [isFetchingAutocomplete, setIsFetchingAutocomplete] = useState(false);
+  const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true);
   const autosaveTimer = useRef(null);
   const promptRef = useRef(null);
   const commandMenuRef = useRef(null);
@@ -84,11 +105,11 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       StarterKit.configure({
         bulletList: { keepMarks: true },
         heading: {
-          levels: [1, 2, 3]
+          levels: [1, 2, 3],
         },
         codeBlock: {
           HTMLAttributes: {
-            class: 'rounded-md bg-gray-800 p-5 font-mono text-sm text-gray-100',
+            class: "rounded-md bg-gray-800 p-5 font-mono text-sm text-gray-100",
           },
         },
         table: false,
@@ -102,7 +123,9 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         nested: true,
       }),
     ],
-    content: currentNote?.content_json ? JSON.parse(currentNote.content_json) : "",
+    content: currentNote?.content_json
+      ? JSON.parse(currentNote.content_json)
+      : "",
     onUpdate: ({ editor, transaction }) => {
       // Only trigger save if the content actually changed
       if (transaction.docChanged && onSave && currentNote) {
@@ -111,32 +134,36 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           debouncedSave(json);
         } catch (e) {
           console.error("Failed to get editor content", e);
-          setSaveStatus({ status: 'error', error: 'Failed to process content' });
+          setSaveStatus({
+            status: "error",
+            error: "Failed to process content",
+          });
         }
       }
     },
     editorProps: {
-      attributes: { 
-        class: "tiptap prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none",
-        'data-placeholder': 'Start writing...'
+      attributes: {
+        class:
+          "tiptap prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none",
+        "data-placeholder": "Start writing...",
       },
       handleKeyDown: (view, event) => {
         // Check if space is pressed at the start of a node
-        if (event.key === ' ' && !showPrompt && !showCommandMenu) {
+        if (event.key === " " && !showPrompt && !showCommandMenu) {
           const { state } = view;
           const { selection } = state;
           const { $from } = selection;
-          
+
           // Check if we're at the start of a node
           if ($from.parentOffset === 0) {
             const coords = view.coordsAtPos(selection.from);
             const editorElement = editorRef.current;
             const editorRect = editorElement.getBoundingClientRect();
-            
+
             // Calculate position relative to the editor container
             const x = coords.left - editorRect.left;
             const y = coords.top - editorRect.top;
-            
+
             setPromptPosition({ x, y });
             setShowPrompt(true);
             event.preventDefault();
@@ -144,21 +171,21 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           }
         }
         // Check if '/' is pressed at the start of a node
-        if (event.key === '/' && !showPrompt && !showCommandMenu) {
+        if (event.key === "/" && !showPrompt && !showCommandMenu) {
           const { state } = view;
           const { selection } = state;
           const { $from } = selection;
-          
+
           // Check if we're at the start of a node
           if ($from.parentOffset === 0) {
             const coords = view.coordsAtPos(selection.from);
             const editorElement = editorRef.current;
             const editorRect = editorElement.getBoundingClientRect();
-            
+
             // Calculate position relative to the editor container
             const x = coords.left - editorRect.left;
             const y = coords.top - editorRect.top;
-            
+
             setPromptPosition({ x, y });
             setShowCommandMenu(true);
             setCommandSearch("");
@@ -167,7 +194,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
             // Ensure focus remains on the command menu input
             setTimeout(() => {
               if (commandMenuRef.current) {
-                const input = commandMenuRef.current.querySelector('input');
+                const input = commandMenuRef.current.querySelector("input");
                 if (input) input.focus();
               }
             }, 0);
@@ -175,7 +202,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           }
         }
         // Handle Tab key for autocomplete acceptance
-        if (event.key === 'Tab' && showAutocomplete) {
+        if (event.key === "Tab" && showAutocomplete) {
           event.preventDefault();
           editor.commands.insertContent(autocompleteSuggestion);
           setShowAutocomplete(false);
@@ -196,14 +223,14 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     let timeoutId = null;
     const handleMouseOver = (event) => {
       const target = event.target;
-      if (target.tagName === 'TD' || target.tagName === 'TH') {
+      if (target.tagName === "TD" || target.tagName === "TH") {
         currentCellRef.current = target;
         const rect = target.getBoundingClientRect();
         const editorRect = editorElement.getBoundingClientRect();
         const mouseX = event.clientX;
         const mouseY = event.clientY;
         const borderThreshold = 5; // Pixels near border to trigger hover
-        
+
         // Calculate positions relative to editor
         const cellLeft = rect.left - editorRect.left;
         const cellRight = rect.right - editorRect.left;
@@ -213,22 +240,23 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         const mouseRelY = mouseY - editorRect.top;
 
         // Determine if mouse is near a border
-        let borderType = '';
-        let x = 0, y = 0;
+        let borderType = "";
+        let x = 0,
+          y = 0;
         if (mouseX >= rect.right - borderThreshold) {
-          borderType = 'right';
+          borderType = "right";
           x = cellRight + 5;
           y = cellTop + rect.height / 2;
         } else if (mouseX <= rect.left + borderThreshold) {
-          borderType = 'left';
+          borderType = "left";
           x = cellLeft - 15;
           y = cellTop + rect.height / 2;
         } else if (mouseY >= rect.bottom - borderThreshold) {
-          borderType = 'bottom';
+          borderType = "bottom";
           x = cellLeft + rect.width / 2;
           y = cellBottom + 5;
         } else if (mouseY <= rect.top + borderThreshold) {
-          borderType = 'top';
+          borderType = "top";
           x = cellLeft + rect.width / 2;
           y = cellTop - 15;
         }
@@ -240,7 +268,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
             y: cellTop,
             width: rect.width,
             height: rect.height,
-            border: borderType
+            border: borderType,
           });
           setShowTableControls(true);
           if (timeoutId) clearTimeout(timeoutId);
@@ -250,7 +278,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
 
     const handleMouseOut = (event) => {
       const target = event.target;
-      if (target.tagName === 'TD' || target.tagName === 'TH') {
+      if (target.tagName === "TD" || target.tagName === "TH") {
         timeoutId = setTimeout(() => {
           setShowTableControls(false);
           setHoveredButton(null);
@@ -260,7 +288,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
 
     const handleContextMenu = (event) => {
       const target = event.target;
-      if (target.tagName === 'TD' || target.tagName === 'TH') {
+      if (target.tagName === "TD" || target.tagName === "TH") {
         event.preventDefault();
         const editorRect = editorElement.getBoundingClientRect();
         const x = event.clientX - editorRect.left;
@@ -270,54 +298,57 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       }
     };
 
-    editorElement.addEventListener('mouseover', handleMouseOver);
-    editorElement.addEventListener('mouseout', handleMouseOut);
-    editorElement.addEventListener('contextmenu', handleContextMenu);
+    editorElement.addEventListener("mouseover", handleMouseOver);
+    editorElement.addEventListener("mouseout", handleMouseOut);
+    editorElement.addEventListener("contextmenu", handleContextMenu);
     return () => {
-      editorElement.removeEventListener('mouseover', handleMouseOver);
-      editorElement.removeEventListener('mouseout', handleMouseOut);
-      editorElement.removeEventListener('contextmenu', handleContextMenu);
+      editorElement.removeEventListener("mouseover", handleMouseOver);
+      editorElement.removeEventListener("mouseout", handleMouseOut);
+      editorElement.removeEventListener("contextmenu", handleContextMenu);
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [editor]);
 
   // Debounced save function
-  const debouncedSave = useCallback(async (content) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    setSaveStatus({ status: 'saving', error: null });
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        const editor = editorInstanceRef.current;
-        if (!editor) return;
-
-        // Get current selection before save
-        const { from, to } = editor.state.selection;
-
-        const updated = {
-          ...currentNote,
-          title: title,
-          content_json: JSON.stringify(content),
-        };
-        await saveNote(updated);
-        if (onSave) onSave(updated);
-        setSaveStatus({ status: 'saved', error: null });
-
-        // Restore selection after save
-        requestAnimationFrame(() => {
-          if (editor && editor.isActive) {
-            editor.commands.setTextSelection({ from, to });
-          }
-        });
-      } catch (error) {
-        console.error('Failed to save note:', error);
-        setSaveStatus({ status: 'error', error: error.message });
+  const debouncedSave = useCallback(
+    async (content) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-    }, 1000); // 1 second debounce
-  }, [currentNote, title, onSave]);
+
+      setSaveStatus({ status: "saving", error: null });
+
+      saveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const editor = editorInstanceRef.current;
+          if (!editor) return;
+
+          // Get current selection before save
+          const { from, to } = editor.state.selection;
+
+          const updated = {
+            ...currentNote,
+            title: title,
+            content_json: JSON.stringify(content),
+          };
+          await saveNote(updated);
+          if (onSave) onSave(updated);
+          setSaveStatus({ status: "saved", error: null });
+
+          // Restore selection after save
+          requestAnimationFrame(() => {
+            if (editor && editor.isActive) {
+              editor.commands.setTextSelection({ from, to });
+            }
+          });
+        } catch (error) {
+          console.error("Failed to save note:", error);
+          setSaveStatus({ status: "error", error: error.message });
+        }
+      }, 1000); // 1 second debounce
+    },
+    [currentNote, title, onSave]
+  );
 
   // Close prompt, command menu, table controls, context menu, and autocomplete when clicking outside
   useEffect(() => {
@@ -325,47 +356,282 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       if (promptRef.current && !promptRef.current.contains(event.target)) {
         setShowPrompt(false);
       }
-      if (commandMenuRef.current && !commandMenuRef.current.contains(event.target)) {
+      if (
+        commandMenuRef.current &&
+        !commandMenuRef.current.contains(event.target)
+      ) {
         setShowCommandMenu(false);
       }
-      if (tableControlsRef.current && !tableControlsRef.current.contains(event.target)) {
+      if (
+        tableControlsRef.current &&
+        !tableControlsRef.current.contains(event.target)
+      ) {
         setShowTableControls(false);
       }
-      if (tableContextMenuRef.current && !tableContextMenuRef.current.contains(event.target)) {
+      if (
+        tableContextMenuRef.current &&
+        !tableContextMenuRef.current.contains(event.target)
+      ) {
         setShowTableContextMenu(false);
       }
-      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+      if (
+        autocompleteRef.current &&
+        !autocompleteRef.current.contains(event.target)
+      ) {
         setShowAutocomplete(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
   // Define available commands with categories and actions (Notion-inspired)
   const commands = [
-    { name: "Heading 1", category: "Formatting", action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z" clipRule="evenodd" /></svg> },
-    { name: "Heading 2", category: "Formatting", action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z" clipRule="evenodd" /></svg> },
-    { name: "Heading 3", category: "Formatting", action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z" clipRule="evenodd" /></svg> },
-    { name: "Bold", category: "Formatting", action: () => editor.chain().focus().toggleBold().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4a1 1 0 011-1h5a4 4 0 012.536 7.096A4 4 0 0111 16v1H6a1 1 0 01-1-1V4zm4 10.5a2 2 0 004-1.372A2 2 0 0011 9V7a2 2 0 00-4 0v2a2 2 0 002 2v1.128a2 2 0 000 1.372z" clipRule="evenodd" /></svg> },
-    { name: "Italic", category: "Formatting", action: () => editor.chain().focus().toggleItalic().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4a1 1 0 011-1h3a1 1 0 010 2H8.251l-.234 1.17a1 1 0 01-1.984-.396l.234-1.169A1 1 0 016.017 5H6a1 1 0 010-2h8a1 1 0 011 1 1 1 0 012 0 3 3 0 01-3 3h-.749l.234 1.169a1 1 0 01-1.984.396l-.234-1.17H11a1 1 0 010-2h1.983a1 1 0 01.986 1.17l-.234 1.169a3 3 0 005.965 1.104l.234-1.169A3 3 0 0018.017 5H18a1 1 0 010-2h-2a1 1 0 00-1 1 1 1 0 00-2 0 3 3 0 00-3-3H6a3 3 0 00-3 3v12a3 3 0 003 3h4a3 3 0 003-3 1 1 0 10-2 0 1 1 0 00-1 1H6a1 1 0 00-1-1V5z" clipRule="evenodd" /></svg> },
-    { name: "Bullet List", category: "Lists", action: () => editor.chain().focus().toggleBulletList().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 6a1 1 0 100-2 1 1 0 000 2zM3 9a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 3a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg> },
-    { name: "Numbered List", category: "Lists", action: () => editor.chain().focus().toggleOrderedList().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h1.616a1 1 0 01.986 1.164l-.24 1.208a1 1 0 01-1.974.394l.24-1.208A1 1 0 015.616 5H7v2H4a1 1 0 010-2zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm1 2a1 1 0 010 2h1.616a1 1 0 01.986-1.164l-.24-1.208a1 1 0 011.974-.394l.24 1.208A1 1 0 017.616 15H9v2H4a1 1 0 010-2h3v-2H4z" clipRule="evenodd" /></svg> },
-    { name: "To-Do List", category: "Lists", action: () => editor.chain().focus().toggleTaskList().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm11.293-1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 15H13v-2h3.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg> },
-    { name: "Insert Table", category: "Insert", action: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg> },
-    { name: "Code Block", category: "Insert", action: () => editor.chain().focus().toggleCodeBlock().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm10.293-5.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-2 2a1 1 0 01-1.414-1.414L14.586 15H13v-2h1.586l-1.293-1.293a1 1 0 010-1.414zM6.293 10.293a1 1 0 011.414 0L9 11.586V13h-2v-1.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg> },
-    { name: "Block Quote", category: "Insert", action: () => editor.chain().focus().toggleBlockquote().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 4a1 1 0 011-1h8a1 1 0 011 1v3a1 1 0 01-2 0V5H7v2a1 1 0 01-2 0V4zm-1 5a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zm6 3a1 1 0 011-1h3a1 1 0 110 2h-3a1 1 0 01-1-1zm-1.293 2.293a1 1 0 011.414 0L12 15.586V17H8v-1.414l1.707-1.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg> },
-    { name: "Divider", category: "Structure", action: () => editor.chain().focus().setHorizontalRule().run(), icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg> }
+    {
+      name: "Heading 1",
+      category: "Formatting",
+      action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Heading 2",
+      category: "Formatting",
+      action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Heading 3",
+      category: "Formatting",
+      action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h7.586A2 2 0 0113.172 5.586l1.242 1.242A2 2 0 0115 8.414V15a1 1 0 11-2 0V9h-2v10a1 1 0 11-2 0V9H7v6a1 1 0 11-2 0V5z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Bold",
+      category: "Formatting",
+      action: () => editor.chain().focus().toggleBold().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5 4a1 1 0 011-1h5a4 4 0 012.536 7.096A4 4 0 0111 16v1H6a1 1 0 01-1-1V4zm4 10.5a2 2 0 004-1.372A2 2 0 0011 9V7a2 2 0 00-4 0v2a2 2 0 002 2v1.128a2 2 0 000 1.372z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Italic",
+      category: "Formatting",
+      action: () => editor.chain().focus().toggleItalic().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5 4a1 1 0 011-1h3a1 1 0 010 2H8.251l-.234 1.17a1 1 0 01-1.984-.396l.234-1.169A1 1 0 016.017 5H6a1 1 0 010-2h8a1 1 0 011 1 1 1 0 012 0 3 3 0 01-3 3h-.749l.234 1.169a1 1 0 01-1.984.396l-.234-1.17H11a1 1 0 010-2h1.983a1 1 0 01.986 1.17l-.234 1.169a3 3 0 005.965 1.104l.234-1.169A3 3 0 0018.017 5H18a1 1 0 010-2h-2a1 1 0 00-1 1 1 1 0 00-2 0 3 3 0 00-3-3H6a3 3 0 00-3 3v12a3 3 0 003 3h4a3 3 0 003-3 1 1 0 10-2 0 1 1 0 00-1 1H6a1 1 0 00-1-1V5z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Bullet List",
+      category: "Lists",
+      action: () => editor.chain().focus().toggleBulletList().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5 6a1 1 0 100-2 1 1 0 000 2zM3 9a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 3a1 1 0 100-2 1 1 0 000 2z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Numbered List",
+      category: "Lists",
+      action: () => editor.chain().focus().toggleOrderedList().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h1.616a1 1 0 01.986 1.164l-.24 1.208a1 1 0 01-1.974.394l.24-1.208A1 1 0 015.616 5H7v2H4a1 1 0 010-2zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm1 2a1 1 0 010 2h1.616a1 1 0 01.986-1.164l-.24-1.208a1 1 0 011.974-.394l.24 1.208A1 1 0 017.616 15H9v2H4a1 1 0 010-2h3v-2H4z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "To-Do List",
+      category: "Lists",
+      action: () => editor.chain().focus().toggleTaskList().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm11.293-1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 15H13v-2h3.586l-2.293-2.293a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Insert Table",
+      category: "Insert",
+      action: () =>
+        editor
+          .chain()
+          .focus()
+          .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+          .run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Code Block",
+      category: "Insert",
+      action: () => editor.chain().focus().toggleCodeBlock().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm10.293-5.293a1 1 0 011.414 0l2 2a1 1 0 010 1.414l-2 2a1 1 0 01-1.414-1.414L14.586 15H13v-2h1.586l-1.293-1.293a1 1 0 010-1.414zM6.293 10.293a1 1 0 011.414 0L9 11.586V13h-2v-1.586l-1.293-1.293a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Block Quote",
+      category: "Insert",
+      action: () => editor.chain().focus().toggleBlockquote().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5 4a1 1 0 011-1h8a1 1 0 011 1v3a1 1 0 01-2 0V5H7v2a1 1 0 01-2 0V4zm-1 5a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zm6 3a1 1 0 011-1h3a1 1 0 110 2h-3a1 1 0 01-1-1zm-1.293 2.293a1 1 0 011.414 0L12 15.586V17H8v-1.414l1.707-1.707a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: "Divider",
+      category: "Structure",
+      action: () => editor.chain().focus().setHorizontalRule().run(),
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-blue-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+    },
   ];
-  
+
   // Function to get filtered commands based on search input
   const getFilteredCommands = () => {
     if (!commandSearch) {
       return commands; // Return all commands if no search query
     }
     const searchLower = commandSearch.toLowerCase();
-    return commands.filter(cmd => cmd.name.toLowerCase().includes(searchLower));
+    return commands.filter((cmd) =>
+      cmd.name.toLowerCase().includes(searchLower)
+    );
   };
 
   // Effect: on initial mount or when currentNote changes, load the content if provided
@@ -407,6 +673,8 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     };
 
     const autocompleteHandler = () => {
+      if (!isAutocompleteEnabled) return;
+
       if (autocompleteTimeoutRef.current) {
         clearTimeout(autocompleteTimeoutRef.current);
       }
@@ -415,15 +683,15 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         const { state } = editor;
         const { selection } = state;
         const { $from } = selection;
-        const text = $from.nodeBefore ? $from.nodeBefore.textContent : '';
-        
+        const text = $from.nodeBefore ? $from.nodeBefore.textContent : "";
+
         if (text && text.length >= 3 && !isFetchingAutocomplete) {
           const coords = editor.view.coordsAtPos(selection.from);
           const editorElement = editorRef.current;
           const editorRect = editorElement.getBoundingClientRect();
           const x = coords.left - editorRect.left;
           const y = coords.top - editorRect.top;
-          
+
           setAutocompletePosition({ x, y });
           fetchAutocompleteSuggestion(text);
         } else {
@@ -446,7 +714,16 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
 
   // Update prompt, command menu, table controls, context menu, and autocomplete position on scroll
   useEffect(() => {
-    if ((!showPrompt && !showCommandMenu && !showTableControls && !showTableContextMenu && !showAutocomplete) || !editor || !editorRef.current) return;
+    if (
+      (!showPrompt &&
+        !showCommandMenu &&
+        !showTableControls &&
+        !showTableContextMenu &&
+        !showAutocomplete) ||
+      !editor ||
+      !editorRef.current
+    )
+      return;
 
     const updatePosition = () => {
       const { state } = editor;
@@ -454,18 +731,25 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       const coords = editor.view.coordsAtPos(selection.from);
       const editorElement = editorRef.current;
       const editorRect = editorElement.getBoundingClientRect();
-      
+
       // Calculate position relative to the editor container
       const x = coords.left - editorRect.left;
       const y = coords.top - editorRect.top;
-      
+
       setPromptPosition({ x, y });
       setAutocompletePosition({ x, y });
     };
 
-    window.addEventListener('scroll', updatePosition, true);
-    return () => window.removeEventListener('scroll', updatePosition, true);
-  }, [showPrompt, showCommandMenu, showTableControls, showTableContextMenu, showAutocomplete, editor]);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => window.removeEventListener("scroll", updatePosition, true);
+  }, [
+    showPrompt,
+    showCommandMenu,
+    showTableControls,
+    showTableContextMenu,
+    showAutocomplete,
+    editor,
+  ]);
 
   // Cleanup save timeout on unmount
   useEffect(() => {
@@ -487,7 +771,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
     selectionRef.current = editor.state.selection;
     const noteJSON = editor.getJSON();
     try {
-      console.log('📝 Sending request to streamGrokText with payload:', {
+      console.log("📝 Sending request to streamGrokText with payload:", {
         text: promptInput,
         note_title: title,
         note_context: extractStructuredContext(noteJSON),
@@ -499,21 +783,25 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         note_context: extractStructuredContext(noteJSON),
       });
 
-      console.log('📥 Response received in Editor:', response);
+      console.log("📥 Response received in Editor:", response);
 
       if (!response) {
-        throw new Error('No response received from streamGrokText');
+        throw new Error("No response received from streamGrokText");
       }
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Could not read error text');
-        console.error('❌ StreamGrokText error response:', errorText);
-        throw new Error(`Invalid response from streamGrokText: ${response.status} ${response.statusText}`);
+        const errorText = await response
+          .text()
+          .catch(() => "Could not read error text");
+        console.error("❌ StreamGrokText error response:", errorText);
+        throw new Error(
+          `Invalid response from streamGrokText: ${response.status} ${response.statusText}`
+        );
       }
 
       if (!response.body) {
-        console.error('❌ Response has no body:', response);
-        throw new Error('Response has no readable stream');
+        console.error("❌ Response has no body:", response);
+        throw new Error("Response has no readable stream");
       }
 
       const reader = response.body.getReader();
@@ -522,7 +810,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       let receivedBytes = 0;
 
       // Get total content length if available
-      const contentLength = response.headers.get('content-length');
+      const contentLength = response.headers.get("content-length");
       if (contentLength) {
         totalBytes = parseInt(contentLength, 10);
       }
@@ -537,32 +825,37 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
 
         const chunk = decoder.decode(value);
         const decodedChunk = decodeChunk(chunk);
-        
+
         // Update progress
         receivedBytes += value.length;
         if (totalBytes > 0) {
-          setStreamStatus(prev => ({
+          setStreamStatus((prev) => ({
             ...prev,
-            progress: Math.min(100, Math.round((receivedBytes / totalBytes) * 100))
+            progress: Math.min(
+              100,
+              Math.round((receivedBytes / totalBytes) * 100)
+            ),
           }));
         }
-        
+
         // Stream the chunk using our markdown-aware streaming function
         streamMarkdownToEditor(decodedChunk);
-        
+
         // Small delay to prevent overwhelming the UI
         await new Promise((r) => setTimeout(r, 10));
       }
     } catch (error) {
-      console.error('Error generating text:', error);
+      console.error("Error generating text:", error);
       // Show error to user
       editor.commands.insertContent({
-        type: 'paragraph',
-        content: [{
-          type: 'text',
-          text: 'Error generating text. Please try again.',
-          marks: [{ type: 'bold' }]
-        }]
+        type: "paragraph",
+        content: [
+          {
+            type: "text",
+            text: "Error generating text. Please try again.",
+            marks: [{ type: "bold" }],
+          },
+        ],
       });
     } finally {
       setIsGenerating(false);
@@ -573,7 +866,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleGrokSubmit(e);
     }
@@ -581,7 +874,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
 
   const fetchAutocompleteSuggestion = async (currentText) => {
     if (isFetchingAutocomplete) return;
-    
+
     setIsFetchingAutocomplete(true);
     try {
       const noteJSON = editor.getJSON();
@@ -590,21 +883,21 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         note_title: title,
         note_context: extractStructuredContext(noteJSON),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Autocomplete API error: ${response.status}`);
       }
-      
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let suggestion = '';
-      
+      let suggestion = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         suggestion += decoder.decode(value);
       }
-      
+
       if (suggestion) {
         setAutocompleteSuggestion(suggestion.trim());
         setShowAutocomplete(true);
@@ -620,22 +913,36 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
   };
 
   const renderTableControls = () => {
-    const isColumn = tableControlPosition.type === 'right' || tableControlPosition.type === 'left';
-    const actionText = isColumn ? (tableControlPosition.type === 'right' ? 'Add Column After' : 'Add Column Before') : (tableControlPosition.type === 'bottom' ? 'Add Row After' : 'Add Row Before');
-    const actionFn = isColumn ? (tableControlPosition.type === 'right' ? () => editor.chain().focus().addColumnAfter().run() : () => editor.chain().focus().addColumnBefore().run()) : (tableControlPosition.type === 'bottom' ? () => editor.chain().focus().addRowAfter().run() : () => editor.chain().focus().addRowBefore().run());
+    const isColumn =
+      tableControlPosition.type === "right" ||
+      tableControlPosition.type === "left";
+    const actionText = isColumn
+      ? tableControlPosition.type === "right"
+        ? "Add Column After"
+        : "Add Column Before"
+      : tableControlPosition.type === "bottom"
+      ? "Add Row After"
+      : "Add Row Before";
+    const actionFn = isColumn
+      ? tableControlPosition.type === "right"
+        ? () => editor.chain().focus().addColumnAfter().run()
+        : () => editor.chain().focus().addColumnBefore().run()
+      : tableControlPosition.type === "bottom"
+      ? () => editor.chain().focus().addRowAfter().run()
+      : () => editor.chain().focus().addRowBefore().run();
 
     return (
       <>
         <div
           ref={tableControlsRef}
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: `${tableControlPosition.x}px`,
             top: `${tableControlPosition.y}px`,
             zIndex: 50,
-            transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
+            transition: "opacity 0.2s ease-in-out, transform 0.2s ease-in-out",
             opacity: showTableControls ? 1 : 0,
-            transform: showTableControls ? 'scale(1)' : 'scale(0.9)',
+            transform: showTableControls ? "scale(1)" : "scale(0.9)",
           }}
           className="bg-white border border-gray-200 rounded shadow-lg p-2 backdrop-blur-sm flex flex-col"
         >
@@ -648,20 +955,36 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
             }}
             className="text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 rounded px-3 py-1 text-sm font-medium transition-all duration-200"
           >
-            {isColumn ? 'Add Column' : 'Add Row'}
+            {isColumn ? "Add Column" : "Add Row"}
           </button>
         </div>
         {hoveredButton && (
           <div
             style={{
-              position: 'absolute',
-              left: hoveredButton === 'right' ? `${previewPosition.x + previewPosition.width}px` : hoveredButton === 'left' ? `${previewPosition.x}px` : `${previewPosition.x}px`,
-              top: hoveredButton === 'bottom' ? `${previewPosition.y + previewPosition.height}px` : hoveredButton === 'top' ? `${previewPosition.y}px` : `${previewPosition.y}px`,
-              width: hoveredButton === 'right' || hoveredButton === 'left' ? '2px' : `${previewPosition.width}px`,
-              height: hoveredButton === 'bottom' || hoveredButton === 'top' ? '2px' : `${previewPosition.height}px`,
-              backgroundColor: 'rgba(59, 130, 246, 0.5)', // Blue with transparency
+              position: "absolute",
+              left:
+                hoveredButton === "right"
+                  ? `${previewPosition.x + previewPosition.width}px`
+                  : hoveredButton === "left"
+                  ? `${previewPosition.x}px`
+                  : `${previewPosition.x}px`,
+              top:
+                hoveredButton === "bottom"
+                  ? `${previewPosition.y + previewPosition.height}px`
+                  : hoveredButton === "top"
+                  ? `${previewPosition.y}px`
+                  : `${previewPosition.y}px`,
+              width:
+                hoveredButton === "right" || hoveredButton === "left"
+                  ? "2px"
+                  : `${previewPosition.width}px`,
+              height:
+                hoveredButton === "bottom" || hoveredButton === "top"
+                  ? "2px"
+                  : `${previewPosition.height}px`,
+              backgroundColor: "rgba(59, 130, 246, 0.5)", // Blue with transparency
               zIndex: 40,
-              transition: 'opacity 0.2s ease-in-out',
+              transition: "opacity 0.2s ease-in-out",
               opacity: showTableControls ? 1 : 0,
             }}
           />
@@ -675,7 +998,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
       <div
         ref={tableContextMenuRef}
         style={{
-          position: 'absolute',
+          position: "absolute",
           left: `${contextMenuPosition.x}px`,
           top: `${contextMenuPosition.y}px`,
           zIndex: 60,
@@ -838,7 +1161,7 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
         }
         editor.commands.insertContent(markdownChunk);
       }
-      
+
       if (isFinal && fullMarkdown) {
         // Parse the accumulated markdown into an AST
         const ast = unified().use(remarkParse).parse(fullMarkdown);
@@ -847,9 +1170,12 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           convertNodeToJSON(child)
         );
         const docContent = flattenContent(contentNodes);
-        
+
         // Replace the streamed content with parsed markdown
-        if (selectionRef.current && selectionRef.current.streamStart !== undefined) {
+        if (
+          selectionRef.current &&
+          selectionRef.current.streamStart !== undefined
+        ) {
           const startPos = selectionRef.current.streamStart;
           const endPos = editor.state.selection.to;
           editor.commands.setTextSelection({ from: startPos, to: endPos });
@@ -879,51 +1205,121 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
 
   return (
     <div className="relative min-h-screen">
-      <div className={`max-w-4xl mx-auto rounded-xl shadow-md border p-6 mt-3 mb-3 relative overflow-x-auto ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}>
+      <div
+        className={`max-w-4xl mx-auto rounded-xl shadow-md border p-6 mt-3 mb-3 relative overflow-x-auto ${
+          theme === "dark"
+            ? "bg-gray-800 border-gray-700"
+            : "bg-white border-gray-300"
+        }`}
+      >
         <div className="flex justify-between items-center mb-4">
           <input
             type="text"
-            className={`text-2xl font-semibold w-full border-b focus:outline-none focus:border-blue-500 transition-colors ${theme === 'dark' ? 'text-white border-gray-600 bg-gray-800' : 'text-black border-gray-300 bg-white'}`}
+            className={`text-2xl font-semibold w-full border-b focus:outline-none focus:border-blue-500 transition-colors ${
+              theme === "dark"
+                ? "text-white border-gray-600 bg-gray-800"
+                : "text-black border-gray-300 bg-white"
+            }`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <div className="ml-4 text-sm">
-            {saveStatus.status === 'saving' && (
-              <span className={`flex items-center ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+          <div className="ml-4 text-sm flex items-center gap-2">
+            {saveStatus.status === "saving" && (
+              <span
+                className={`flex items-center ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-500"
+                }`}
+              >
                 <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 Saving...
               </span>
             )}
-            {saveStatus.status === 'saved' && (
-              <span className={theme === 'dark' ? 'text-green-400' : 'text-green-500'}>Saved</span>
+            {saveStatus.status === "saved" && (
+              <span
+                className={
+                  theme === "dark" ? "text-green-400" : "text-green-500"
+                }
+              >
+                Saved
+              </span>
             )}
-            {saveStatus.status === 'error' && (
-              <span className={theme === 'dark' ? 'text-red-400' : 'text-red-500'} title={saveStatus.error}>
+            {saveStatus.status === "error" && (
+              <span
+                className={theme === "dark" ? "text-red-400" : "text-red-500"}
+                title={saveStatus.error}
+              >
                 Save failed
               </span>
             )}
+            <button
+              onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
+              aria-pressed={isAutocompleteEnabled}
+              aria-label="Toggle Autocomplete"
+              title={
+                isAutocompleteEnabled
+                  ? "Disable Autocomplete"
+                  : "Enable Autocomplete"
+              }
+              className={`
+              relative inline-flex items-center px-4 py-1.5 rounded-full transition-colors duration-300
+              text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2
+              ${
+                isAutocompleteEnabled
+                  ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                  : "bg-gray-300 text-gray-800 hover:bg-gray-400 focus:ring-gray-500"
+              }
+            `}
+            >
+              {isAutocompleteEnabled ? "AC ON" : "AC OFF"}
+            </button>
           </div>
         </div>
         <div className="w-full overflow-x-auto">
           <EditorContent editor={editor} ref={editorRef} className="w-full" />
         </div>
-        
+
         {/* Add streaming progress indicator */}
         {streamStatus.isStreaming && (
           <div className="absolute bottom-4 right-4 bg-white/95 border border-gray-200 rounded-lg shadow-lg p-3 flex items-center gap-2">
             <div className="w-4 h-4">
               <svg className="animate-spin" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
               </svg>
             </div>
-            <span className="text-sm text-gray-600">Generating response...</span>
+            <span className="text-sm text-gray-600">
+              Generating response...
+            </span>
             {streamStatus.progress > 0 && (
               <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-blue-500 transition-all duration-300 ease-out"
                   style={{ width: `${streamStatus.progress}%` }}
                 />
@@ -931,12 +1327,12 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
             )}
           </div>
         )}
-        
+
         {showPrompt && (
           <div
             ref={promptRef}
             style={{
-              position: 'absolute',
+              position: "absolute",
               left: `${promptPosition.x}px`,
               top: `${promptPosition.y}px`,
               zIndex: 50,
@@ -962,8 +1358,20 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
               {isGenerating ? (
                 <span className="flex items-center gap-1">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Generating...
                 </span>
@@ -974,82 +1382,121 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           </div>
         )}
         {showCommandMenu && (
-            <div
-              ref={commandMenuRef}
-              style={{
-                position: 'absolute',
-                left: `${promptPosition.x}px`,
-                top: `${promptPosition.y}px`,
-                zIndex: 50,
-              }}
-              className={`border rounded-lg shadow-lg p-3 backdrop-blur-md min-w-[250px] max-h-[350px] overflow-y-auto transition-all duration-200 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white/98 border-gray-200'}`}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const filteredCommands = getFilteredCommands();
-                  if (filteredCommands.length > 0 && selectedCommandIndex < filteredCommands.length) {
-                    filteredCommands[selectedCommandIndex].action();
-                    setShowCommandMenu(false);
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                } else if (e.key === 'ArrowDown') {
-                  const filteredCommands = getFilteredCommands();
-                  if (filteredCommands.length > 0) {
-                    setSelectedCommandIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                } else if (e.key === 'ArrowUp') {
-                  setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
-                  e.preventDefault();
-                  e.stopPropagation();
-                } else if (e.key === 'Escape') {
-                  setShowCommandMenu(false);
-                  e.preventDefault();
-                  e.stopPropagation();
-                } else if (e.key === 'Backspace' && commandSearch === "") {
+          <div
+            ref={commandMenuRef}
+            style={{
+              position: "absolute",
+              left: `${promptPosition.x}px`,
+              top: `${promptPosition.y}px`,
+              zIndex: 50,
+            }}
+            className={`border rounded-lg shadow-lg p-3 backdrop-blur-md min-w-[250px] max-h-[350px] overflow-y-auto transition-all duration-200 ${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white/98 border-gray-200"
+            }`}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const filteredCommands = getFilteredCommands();
+                if (
+                  filteredCommands.length > 0 &&
+                  selectedCommandIndex < filteredCommands.length
+                ) {
+                  filteredCommands[selectedCommandIndex].action();
                   setShowCommandMenu(false);
                   e.preventDefault();
                   e.stopPropagation();
                 }
-              }}
+              } else if (e.key === "ArrowDown") {
+                const filteredCommands = getFilteredCommands();
+                if (filteredCommands.length > 0) {
+                  setSelectedCommandIndex((prev) =>
+                    Math.min(prev + 1, filteredCommands.length - 1)
+                  );
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              } else if (e.key === "ArrowUp") {
+                setSelectedCommandIndex((prev) => Math.max(prev - 1, 0));
+                e.preventDefault();
+                e.stopPropagation();
+              } else if (e.key === "Escape") {
+                setShowCommandMenu(false);
+                e.preventDefault();
+                e.stopPropagation();
+              } else if (e.key === "Backspace" && commandSearch === "") {
+                setShowCommandMenu(false);
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+          >
+            <div
+              className={`mb-2 border-b pb-1 ${
+                theme === "dark" ? "border-gray-700" : "border-gray-200"
+              }`}
             >
-              <div className={`mb-2 border-b pb-1 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
-                <input
-                  type="text"
-                  className={`w-full text-sm p-1 border-none focus:outline-none font-medium ${theme === 'dark' ? 'text-white bg-gray-800' : 'text-gray-800 bg-white'}`}
-                  value={`/${commandSearch}`}
-                  onChange={(e) => {
-                    const value = e.target.value.startsWith('/') ? e.target.value.slice(1) : e.target.value;
-                    setCommandSearch(value);
-                    setSelectedCommandIndex(0);
-                  }}
-                  placeholder="/Search commands..."
-                  autoFocus
-                />
-              </div>
-              <div className={`text-xs font-medium mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Commands</div>
-              {getFilteredCommands().length > 0 ? (
-                <ul className="space-y-0.5">
-                  {getFilteredCommands().map((cmd, index) => (
-                    <li key={cmd.name}>
-                      <button
-                        onClick={() => {
-                          cmd.action();
-                          setShowCommandMenu(false);
-                        }}
-                        className={`w-full text-left px-2 py-1.5 rounded text-sm font-normal transition-colors flex items-center gap-1.5 ${theme === 'dark' ? index === selectedCommandIndex ? 'bg-blue-900 text-blue-300' : 'hover:bg-blue-700 text-white' : index === selectedCommandIndex ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-50 text-gray-800'}`}
-                      >
-                        {cmd.icon}
-                        {cmd.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className={`text-sm italic px-2 py-1.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>No matches found.</div>
-              )}
+              <input
+                type="text"
+                className={`w-full text-sm p-1 border-none focus:outline-none font-medium ${
+                  theme === "dark"
+                    ? "text-white bg-gray-800"
+                    : "text-gray-800 bg-white"
+                }`}
+                value={`/${commandSearch}`}
+                onChange={(e) => {
+                  const value = e.target.value.startsWith("/")
+                    ? e.target.value.slice(1)
+                    : e.target.value;
+                  setCommandSearch(value);
+                  setSelectedCommandIndex(0);
+                }}
+                placeholder="/Search commands..."
+                autoFocus
+              />
             </div>
+            <div
+              className={`text-xs font-medium mb-1 ${
+                theme === "dark" ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              Commands
+            </div>
+            {getFilteredCommands().length > 0 ? (
+              <ul className="space-y-0.5">
+                {getFilteredCommands().map((cmd, index) => (
+                  <li key={cmd.name}>
+                    <button
+                      onClick={() => {
+                        cmd.action();
+                        setShowCommandMenu(false);
+                      }}
+                      className={`w-full text-left px-2 py-1.5 rounded text-sm font-normal transition-colors flex items-center gap-1.5 ${
+                        theme === "dark"
+                          ? index === selectedCommandIndex
+                            ? "bg-blue-900 text-blue-300"
+                            : "hover:bg-blue-700 text-white"
+                          : index === selectedCommandIndex
+                          ? "bg-blue-100 text-blue-700"
+                          : "hover:bg-blue-50 text-gray-800"
+                      }`}
+                    >
+                      {cmd.icon}
+                      {cmd.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div
+                className={`text-sm italic px-2 py-1.5 ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                No matches found.
+              </div>
+            )}
+          </div>
         )}
         {showTableControls && renderTableControls()}
         {showTableContextMenu && renderTableContextMenu()}
@@ -1057,16 +1504,24 @@ const Editor = ({ currentNote, onSave, theme, ...props }) => {
           <div
             ref={autocompleteRef}
             style={{
-              position: 'absolute',
+              position: "absolute",
               left: `${autocompletePosition.x}px`,
               top: `${autocompletePosition.y}px`,
               zIndex: 50,
             }}
-            className={`bg-white/95 border border-gray-200 rounded-lg shadow-lg p-2 backdrop-blur-sm min-w-[200px] max-w-[400px] ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white text-gray-800'}`}
+            className={`bg-white/95 border border-gray-200 rounded-lg shadow-lg p-2 backdrop-blur-sm min-w-[200px] max-w-[400px] ${
+              theme === "dark"
+                ? "bg-gray-800 border-gray-700 text-white"
+                : "bg-white text-gray-800"
+            }`}
           >
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Autocomplete Suggestion</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              Autocomplete Suggestion
+            </div>
             <div className="text-sm mb-2">{autocompleteSuggestion}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Press Tab to accept</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Press Tab to accept
+            </div>
           </div>
         )}
       </div>
