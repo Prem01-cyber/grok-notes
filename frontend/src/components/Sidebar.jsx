@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { getAllNotes, saveNote, deleteNote } from "../api";
 import { CollapseButton } from "../utils/toolbarUtils.jsx";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
 export default function Sidebar({ onSelect, selectedId, notes, setNotes, isCollapsed, setIsCollapsed, theme, toggleTheme }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState(null);
 
   async function fetchNotes() {
     const data = await getAllNotes();
@@ -33,25 +36,30 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
 
   const handleDeleteNote = async (noteId, e) => {
     e.stopPropagation(); // Prevent note selection when clicking delete
-    if (!window.confirm('Are you sure you want to delete this note?')) {
-      return;
-    }
+    setNoteToDelete(noteId);
+    setShowDeleteModal(true);
+  };
 
-    try {
-      setIsDeleting(true);
-      await deleteNote(noteId);
-      const updatedNotes = notes.filter(note => note.id !== noteId);
-      setNotes(updatedNotes);
-      
-      // If the deleted note was selected, select the first available note
-      if (selectedId === noteId && updatedNotes.length > 0) {
-        onSelect(updatedNotes[0]);
+  const confirmDelete = async () => {
+    if (noteToDelete) {
+      try {
+        setIsDeleting(true);
+        await deleteNote(noteToDelete);
+        const updatedNotes = notes.filter(note => note.id !== noteToDelete);
+        setNotes(updatedNotes);
+        
+        // If the deleted note was selected, select the first available note
+        if (selectedId === noteToDelete && updatedNotes.length > 0) {
+          onSelect(updatedNotes[0]);
+        }
+      } catch (error) {
+        console.error('Failed to delete note:', error);
+        alert('Failed to delete note. Please try again.');
+      } finally {
+        setIsDeleting(false);
+        setShowDeleteModal(false);
+        setNoteToDelete(null);
       }
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-      alert('Failed to delete note. Please try again.');
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -169,6 +177,12 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
           </div>
         </div>
       </div>
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        theme={theme}
+      />
     </div>
   );
 }
