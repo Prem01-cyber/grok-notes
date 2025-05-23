@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 from models import Note
 from database import get_session
+from fastapi import UploadFile, File
 
 router = APIRouter()
 
