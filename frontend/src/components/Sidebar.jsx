@@ -61,7 +61,7 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
 
   return (
     <div className="relative">
-      <div className={`fixed top-0 left-0 h-screen ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 border-r'} transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <div className={`fixed top-0 left-0 h-screen ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 border-r'} shadow-sm transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'} z-10`}>
         <div className="h-full flex flex-col">
           {/* Toggle Buttons */}
           <div className="relative">
@@ -78,25 +78,25 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
             <div className="p-4">
               {!isCollapsed && (
                 <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className={`text-lg font-semibold uppercase tracking-wider flex items-center gap-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <span className={`${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>📝</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className={`text-base font-semibold uppercase tracking-wide flex items-center gap-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
+                      <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>📝</span>
                       Notes
                     </h2>
-                    <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{notes.length}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>{notes.length}</span>
                   </div>
 
                   {/* Search Bar */}
-                  <div className="relative mb-4">
+                  <div className="relative mb-3">
                     <input
                       type="text"
-                      placeholder="Search notes..."
+                      placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 'bg-gray-50 text-gray-800 border-gray-200'}`}
+                      className={`w-full px-3 py-1.5 text-sm border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all ${theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 'bg-gray-50 text-gray-800 border-gray-200 placeholder-gray-500'}`}
                     />
                     <svg
-                      className={`absolute right-3 top-2.5 w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                      className={`absolute right-3 top-2.5 w-5 h-5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -108,7 +108,7 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                   {/* New Note Button */}
                   <button
                     onClick={createNewNote}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md mb-4 flex items-center justify-center gap-2 transition-colors text-sm font-medium"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-3 rounded-md mb-3 flex items-center justify-center gap-1.5 transition-colors duration-200 text-sm font-medium"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -124,7 +124,7 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                   <div
                     key={note.id}
                     onClick={() => onSelect(note)}
-                    className={`cursor-pointer px-3 py-2 rounded-md transition-colors group ${
+                    className={`cursor-pointer px-2 py-1.5 rounded-md transition-colors duration-200 group ${
                       selectedId === note.id
                         ? theme === 'dark' ? 'bg-blue-900 text-blue-300' : 'bg-blue-100 text-blue-700'
                         : theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
@@ -132,22 +132,22 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                   >
                     {isCollapsed ? (
                       <div className="flex justify-center">
-                        <span className="text-lg">📝</span>
+                        <span className="text-base">📝</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-400'}`}>📝</span>
-                          <span className={`truncate ${theme === 'dark' && selectedId !== note.id ? 'text-gray-200' : ''}`}>{note.title || `Note ${note.id}`}</span>
+                          <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-400'} text-sm`}>📝</span>
+                          <span className={`truncate text-sm ${theme === 'dark' && selectedId !== note.id ? 'text-gray-200' : ''}`}>{note.title || `Note ${note.id}`}</span>
                         </div>
                         <button
                           onClick={(e) => handleDeleteNote(note.id, e)}
                           disabled={isDeleting}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-md transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 rounded-full transition-all duration-200"
                           title="Delete note"
                         >
                           <svg
-                            className="w-4 h-4 text-red-500 hover:text-red-600"
+                            className="w-5 h-5 text-red-500 hover:text-red-600"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
