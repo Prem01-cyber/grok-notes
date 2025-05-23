@@ -6,6 +6,7 @@ import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import Link from "@tiptap/extension-link";
 import CodeHighlight from "../extensions/CodeHighlight";
 import CodeRunner from "../extensions/CodeRunner";
 import { Table } from "../extensions/Table";
@@ -196,6 +197,10 @@ const Editor = ({
       Typography,
       Highlight,
       Placeholder.configure({ placeholder: "Press Space to prompt Grok..." }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
       Table,
       TaskList,
       TaskItem.configure({
