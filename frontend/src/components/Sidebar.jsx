@@ -87,11 +87,11 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
               {!isCollapsed && (
                 <>
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className={`text-base font-semibold uppercase tracking-wide flex items-center gap-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
-                      <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>📝</span>
+                    <h2 className={`text-base font-semibold uppercase tracking-wide flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                      <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>📝</span>
                       Notes
                     </h2>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>{notes.length}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{notes.length}</span>
                   </div>
 
                   {/* Search Bar */}
@@ -146,7 +146,7 @@ export default function Sidebar({ onSelect, selectedId, notes, setNotes, isColla
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-400'} text-sm`}>📝</span>
-                          <span className={`truncate text-sm ${theme === 'dark' && selectedId !== note.id ? 'text-gray-200' : ''}`}>{note.title || `Note ${note.id}`}</span>
+                          <span className={`truncate text-sm ${theme === 'dark' ? 'text-white' : ''}`}>{note.title || `Note ${note.id}`}</span>
                         </div>
                         <button
                           onClick={(e) => handleDeleteNote(note.id, e)}
