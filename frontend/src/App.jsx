@@ -50,27 +50,43 @@ export default function App() {
           <p className={`p-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Select a note to begin editing.</p>
         )}
       </main>
-      <aside className={`h-screen border-l ${theme === 'dark' ? 'border-gray-700 bg-gradient-to-b from-gray-800 to-gray-900' : 'border-gray-200 bg-gradient-to-b from-white to-gray-100'} fixed right-0 w-20 shadow-lg`}>
-        <div className="flex flex-col items-center p-3 h-full">
+      <aside className={`h-screen border-l ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} fixed right-0 w-20 shadow-md`}>
+        <div className="flex flex-col items-center p-4 h-full">
+          <h3 className={`text-xs font-semibold uppercase tracking-wider mb-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Tools</h3>
           <button
             onClick={() => setIsAutocompleteEnabled(!isAutocompleteEnabled)}
             aria-pressed={isAutocompleteEnabled}
             aria-label="Toggle Autocomplete"
             title={isAutocompleteEnabled ? "Disable Autocomplete" : "Enable Autocomplete"}
             className={`
-              inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
+              inline-flex items-center justify-center p-2 rounded-md transition-all duration-200
               text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
               ${theme === 'dark' 
                 ? isAutocompleteEnabled
-                  ? "bg-gray-600 text-white hover:bg-gray-500 hover:scale-110 focus:ring-gray-400 shadow-md"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:scale-110 focus:ring-gray-500 shadow-md"
+                  ? "bg-gray-700 text-white hover:bg-gray-600 focus:ring-gray-500"
+                  : "bg-gray-800 text-gray-400 hover:bg-gray-700 focus:ring-gray-600"
                 : isAutocompleteEnabled
-                  ? "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:scale-110 focus:ring-gray-400 shadow-md"
-                  : "bg-gray-300 text-gray-600 hover:bg-gray-400 hover:scale-110 focus:ring-gray-500 shadow-md"
+                  ? "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-400"
+                  : "bg-gray-200 text-gray-600 hover:bg-gray-300 focus:ring-gray-500"
               }
             `}
           >
-            <span className="text-base">✍️</span>
+            <span className="text-base">{isAutocompleteEnabled ? '🖋️' : '✖️'}</span>
+          </button>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle Theme"
+            title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className={`
+              inline-flex items-center justify-center p-2 rounded-md transition-all duration-200
+              text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
+              ${theme === 'dark'
+                ? "bg-gray-700 text-white hover:bg-gray-600 focus:ring-gray-500"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-400"
+              }
+            `}
+          >
+            <span className="text-base">{theme === 'dark' ? '☀️' : '🌙'}</span>
           </button>
           <button
             onClick={async () => {
@@ -94,15 +110,15 @@ export default function App() {
             aria-label="Backup Database"
             title="Backup Database"
             className={`
-              inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
+              inline-flex items-center justify-center p-2 rounded-md transition-all duration-200
               text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
               ${theme === 'dark'
-                ? "bg-gray-600 text-white hover:bg-gray-500 hover:scale-110 focus:ring-gray-400 shadow-md"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:scale-110 focus:ring-gray-400 shadow-md"
+                ? "bg-gray-700 text-white hover:bg-gray-600 focus:ring-gray-500"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-400"
               }
             `}
           >
-            <span className="text-base">💾</span>
+            <span className="text-base">📦</span>
           </button>
           <button
             onClick={() => {
@@ -142,17 +158,17 @@ export default function App() {
             aria-label="Restore Database"
             title="Restore Database"
             className={`
-              inline-flex items-center justify-center p-2 rounded-full transition-all duration-300
+              inline-flex items-center justify-center p-2 rounded-md transition-all duration-200
               text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 mb-3
               ${theme === 'dark'
-                ? "bg-gray-600 text-white hover:bg-gray-500 hover:scale-110 focus:ring-gray-400 shadow-md"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:scale-110 focus:ring-gray-400 shadow-md"
+                ? "bg-gray-700 text-white hover:bg-gray-600 focus:ring-gray-500"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-400"
               }
             `}
           >
-            <span className="text-base">📤</span>
+            <span className="text-base">🔄</span>
           </button>
-          {/* Add more status indicators here as needed */}
+          {/* Add more tools or status indicators here as needed */}
         </div>
       </aside>
     </div>
