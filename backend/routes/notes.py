@@ -12,7 +12,10 @@ from grok_utils import (
     format_markdown
 )
 import json
-from sqlmodel import Session, engine
+from sqlmodel import Session
+from database import engine
+from numpy import dot
+from numpy.linalg import norm
 
 router = APIRouter()
 
@@ -129,7 +132,7 @@ async def create_enhanced_note(
             note = Note(
                 title=title,
                 content_json=json.dumps({"content": content}),
-                metadata=json.dumps(enhanced_data["metadata"]),
+                note_metadata=json.dumps(enhanced_data["note_metadata"]),
                 chunks=json.dumps(enhanced_data["chunks"]),
                 embeddings=json.dumps(enhanced_data["embeddings"])
             )
@@ -183,7 +186,7 @@ async def get_note_markdown(note_id: int):
                 "title": note.title,
                 "chunks": json.loads(note.chunks),
                 "clusters": json.loads(note.embeddings),
-                "metadata": json.loads(note.metadata)
+                "note_metadata": json.loads(note.note_metadata)
             })
         }
 
@@ -204,8 +207,6 @@ async def search_notes(query: str):
             note_embeddings = json.loads(note.embeddings)
             if note_embeddings:
                 # Calculate similarity (cosine similarity)
-                from numpy import dot
-                from numpy.linalg import norm
                 similarities = [
                     dot(query_embedding, emb) / (norm(query_embedding) * norm(emb))
                     for emb in note_embeddings
